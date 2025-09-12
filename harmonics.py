@@ -47,8 +47,41 @@ Multiply with the l-th eigenfunction and integrate to get
     <d_xx u, u_l> = 1/2 * a_l * pi^2 * l^2 = <delta(x-x0), u_l> = u_l(x_0) = sin(pi * l * x_0)
     a_l = 2 / ( pi^2 * l^2 ) sin(pi * l * x_0)
 """
+from argparse import ArgumentParser
+import matplotlib.pyplot as plt
+import numpy as np
+
+
 def main():
-    pass
+    args = parse_args()
+    print(f'pick position = {args.pick_position}')
+
+    a = coefficients(args.num_terms, args.pick_position)
+    plot = plt.subplots(1,1)
+    plot[1].bar(np.linspace(1,args.num_terms, args.num_terms), np.abs(a))
+    plt.show()
+
+def parse_args():
+    parser = ArgumentParser(description='Visualize the vibration modes of a guitar string')
+    parser.add_argument('--num-terms', '-N', type=int, default=10)
+    parser.add_argument('--pick-position', '-x0', type=float_in_interval(0.,1.), default='0.5')
+    args = parser.parse_args()
+    return args
+
+
+def float_in_interval(lb: float, ub: float):
+    def float_in_interval(f: str):
+        number = float(f)
+        if number < lb or number > ub:
+            raise ValueError(f'{number} is outside the range [{lb},{ub}]')
+        return number
+    return float_in_interval
+
+
+def coefficients(num_terms: int, x0: float):
+    idx = np.linspace(1,num_terms,num_terms)
+    return 2. * np.pi**-2 * np.power(idx, -2) * np.sin(np.pi * idx * x0)
+
 
 if __name__ == '__main__':
     main()
