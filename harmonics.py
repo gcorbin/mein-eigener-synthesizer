@@ -49,6 +49,7 @@ Multiply with the l-th eigenfunction and integrate to get
 """
 from argparse import ArgumentParser
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 
 
@@ -56,14 +57,25 @@ def main():
     args = parse_args()
     print(f'pick position = {args.pick_position}')
 
-    a = coefficients(args.num_terms, args.pick_position)
-    plot = plt.subplots(1,1)
-    plot[1].bar(np.linspace(1,args.num_terms, args.num_terms), np.abs(a))
+    coeffs = coefficients(args.num_terms, args.pick_position)
+    x = np.linspace(0., 1., 201)
+    basis = eval_basis(args.num_terms, x)
+    u0 = np.matmul(basis, coeffs)
+
+    fig, ax = plt.subplots(2,1)
+    ax[0].xaxis.set_major_locator(ticker.MaxNLocator(10, integer=True))
+    ax[0].bar(np.linspace(1,args.num_terms, args.num_terms), np.abs(coeffs))
+    ax[1].plot(x, initial_condition(args.pick_position, x), label=f'Exact initial condition')
+    for n in range(1, min(args.num_terms,3)+1):
+        ax[1].plot(x, np.matmul(basis[:, 0:n], coeffs[0:n]), label=f'Expansion with {n} terms')
+    ax[1].plot(x, u0, label=f'Series expansion of u_0 with {args.num_terms} terms')
+    ax[1].legend()
     plt.show()
+
 
 def parse_args():
     parser = ArgumentParser(description='Visualize the vibration modes of a guitar string')
-    parser.add_argument('--num-terms', '-N', type=int, default=10)
+    parser.add_argument('--num-terms', '-N', type=int, default=20)
     parser.add_argument('--pick-position', '-x0', type=float_in_interval(0.,1.), default='0.5')
     args = parser.parse_args()
     return args
@@ -82,6 +94,16 @@ def coefficients(num_terms: int, x0: float):
     idx = np.linspace(1,num_terms,num_terms)
     return 2. * np.pi**-2 * np.power(idx, -2) * np.sin(np.pi * idx * x0)
 
+
+def eval_basis(num_terms: int, x):
+    b = np.zeros((x.size, num_terms))
+    for i in range(num_terms):
+        b[:, i] = np.sin(np.pi * (i+1) * x)
+    return b
+
+
+def initial_condition(x0, x):
+    return np.where(x<x0,(1-x0)*x, x0*(1.-x))
 
 if __name__ == '__main__':
     main()
