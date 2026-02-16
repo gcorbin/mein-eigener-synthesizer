@@ -9,8 +9,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def initial_condition(x0, x):
-    return np.where(x<x0,(1-x0)*x, x0*(1.-x))
+def hat_fun(x, L, x0):
+    assert L > 0.
+    assert x0 >= 0. and x0 <= L
+    return np.where(x<x0,(L-x0)/L*x, x0*(L-x)/L)
 
 
 if __name__ == '__main__':
@@ -18,14 +20,14 @@ if __name__ == '__main__':
     dur = 2  # seconds
     halflife = 0.2  # seconds
     base_freq = 880  # Hz
-    L = 1.  # m
+    L = 0.5  # m
     Nx = 101  # Discretize x with Nx values
     Nk = 20  # Use Nk eigenfunctions
 
     x = np.linspace(0., L, Nx)
     e_k, lam_k = laplace_1d_eigen(x, N=Nk, L=L)
 
-    U0 = initial_condition(0.5, x)  # Initial condition, evaluated at x
+    U0 = hat_fun(x, x0 = 0.85*L, L=L)  # Initial condition, evaluated at x
     u0_k = np.matmul(e_k, U0)  # Coefficients in expansion of initial condition U0 = sum_k u0_k * e_k(x)
 
     #freq = np.atleast_2d(np.array([base_freq, base_freq*np.pow(2., 3./12.), base_freq*np.pow(2., 7./12.)]))
@@ -43,7 +45,7 @@ if __name__ == '__main__':
 
     N = 4000
     plt.plot(t[0:N], U[0:N, 50], label='oscillator x = 0.5')
-    plt.plot(t[0:N], np.sum(U[0:N, :], axis=1), label='oscillator, integrated')
+    #plt.plot(t[0:N], np.sum(U[0:N, :], axis=1), label='oscillator, integrated')
     plt.legend()
     plt.show()
     writer.write_soundfile('string', U_x50, samplerate)
