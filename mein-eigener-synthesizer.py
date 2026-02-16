@@ -35,17 +35,27 @@ if __name__ == '__main__':
     t = np.atleast_2d(np.arange(0, dur, 1./samplerate)).transpose()
 
     c2, d = damped_oscillator_coefficients(base_freq, halflife)
-    u_k = damped_oscillator(t, -4. * L**2 * base_freq * lam_k, d, u0_k, 0.)
-    U = np.matmul(u_k, e_k)
-
-    U_x50 = np.matmul(u_k, e_k[:, 50])
-
+    u_k = damped_oscillator(t, -4. * L**2 * base_freq**2 * lam_k, d, u0_k, 0.)
     print(f'base c^2 @ 880 Hz = {c2}, d = {d}')
     print(f'actual c^2 = {-4. * L**2 * base_freq**2 * lam_k}')
 
+    # We don't need to evaluate the full solution
+    #U = np.matmul(u_k, e_k)
+
+    x_out = 0.8*L
+    e_out, _ = laplace_1d_eigen(x_out, N=Nk, L=L)
+    U_x50 = np.matmul(u_k, e_out)
+
+
     N = 4000
-    plt.plot(t[0:N], U[0:N, 50], label='oscillator x = 0.5')
-    #plt.plot(t[0:N], np.sum(U[0:N, :], axis=1), label='oscillator, integrated')
-    plt.legend()
+    fig, ax = plt.subplots(2,1)
+    #ax[0].plot(t[0:N], U[0:N, 50], label='U(t, x=0.5)')
+    ax[0].plot(t[0:N], U_x50[0:N], label='U(t, x=0.5)')
+    ax[0].legend()
+
+    Uf = np.fft.rfft(U_x50[0:N], axis=0)
+    f = np.fft.rfftfreq(N, d = 1./samplerate)
+    ax[1].plot(f, np.abs(Uf), label='U, amplitude spectrum')
+    ax[1].legend()
     plt.show()
     writer.write_soundfile('string', U_x50, samplerate)
