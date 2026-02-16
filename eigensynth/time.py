@@ -35,7 +35,7 @@ def oscillator(t, c2, x0, dx0):
     :param dx0: Initial condition for dx/dt.
     :return: x(t), i.e. solution of the oscillator evaluated at t.
     """
-    assert c2 > 0
+    assert np.all(c2 > 0)
     c = np.sqrt(c2)
     return x0 * np.cos(c * t) + dx0 / c * np.sin(c * t)
 
@@ -48,13 +48,12 @@ def damped_oscillator_coefficients(freq, halflife):
     :param halflife: Dampening halflife in seconds.
     :return:  Coefficients c2, d for the damped_oscillator function.
     """
-    assert freq > 0
-    assert halflife > 0
+    assert np.all(freq > 0)
+    assert np.all(halflife > 0)
 
-    if np.isinf(halflife):
-        d = 0
-    else:
-        d = 2. * np.log(2) / halflife
+    d = np.where(np.isinf(halflife),
+                0,
+                 2. * np.log(2.) / halflife)
 
     # freq = sqrt( c2 - d^2 / 4 ) / (2 * pi)
     c2 = (freq * 2 * np.pi )**2 + d**2 / 4
@@ -98,9 +97,9 @@ def damped_oscillator(t, c2, d, x0, dx0):
     :param dx0: Initial condition for dx/dt.
     :return: x(t), i.e. solution of the damped oscillator evaluated at t.
     """
-    assert c2 > 0., "c^2 must be positive"
-    assert d >= 0., "Damping coefficient d must be positive"
-    assert d**2 < 4. * c2, "No oscillations for d > 2c"
+    assert np.all(c2 > 0.), "c^2 must be positive"
+    assert np.all(d >= 0.), "Damping coefficient d must be positive"
+    assert np.all(d**2 < 4. * c2), "No oscillations for d > 2c"
     gamma = np.sqrt(c2 - d**2 / 4.)
 
     alpha = x0

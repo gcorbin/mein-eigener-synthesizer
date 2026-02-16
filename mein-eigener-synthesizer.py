@@ -12,9 +12,10 @@ if __name__ == '__main__':
     samplerate = 44100  # Hz
     dur = 2  # seconds
     halflife = 0.2  # seconds
-    freq = 880  # Hz
+    base_freq = 880  # Hz
+    freq = np.atleast_2d(np.array([base_freq, base_freq*np.pow(2., 3./12.), base_freq*np.pow(2., 7./12.)]))
 
-    t = np.arange(0, dur, 1./samplerate)
+    t = np.atleast_2d(np.arange(0, dur, 1./samplerate)).transpose()
     c2 = c2_from_frequency(freq)
     x = oscillator(t, c2, 1., 0.)
 
@@ -24,9 +25,9 @@ if __name__ == '__main__':
     print(f'harmonic c^2 = {c2}, dampened c^2 = {c2_dampened}, dampened d = {d}')
 
     N = 1000
-    plt.plot(t[0:N], x[0:N], label='harmonic oscillator')
-    plt.plot(t[0:N], xd[0:N], label='dampened oscillator')
+    plt.plot(t[0:N], np.sum(x[0:N], axis=1), label='harmonic oscillator')
+    plt.plot(t[0:N], np.sum(xd[0:N], axis=1), label='dampened oscillator')
     plt.legend()
     plt.show()
-    writer.write_soundfile('harmonic_880Hz', x, samplerate)
-    writer.write_soundfile('dampened_880Hz', xd, samplerate)
+    writer.write_soundfile('harmonic_880Hz', np.sum(x, axis=1), samplerate)
+    writer.write_soundfile('dampened_880Hz', np.sum(xd, axis=1), samplerate)
