@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: None
+#
+# SPDX-License-Identifier: CC0-1.0
 """
 Solve the 1-D wave equation
 
@@ -56,20 +59,37 @@ import numpy as np
 def main():
     args = parse_args()
     print(f'pick position = {args.pick_position}')
+    print(f'hole position = {args.hole_position[0]}, {args.hole_position[1]}')
 
+    idx = np.linspace(1,args.num_terms, args.num_terms)
     coeffs = coefficients(args.num_terms, args.pick_position)
     x = np.linspace(0., 1., 201)
     basis = eval_basis(args.num_terms, x)
     u0 = np.matmul(basis, coeffs)
 
-    fig, ax = plt.subplots(2,1)
+    fig, ax = plt.subplots(4,1)
+
     ax[0].xaxis.set_major_locator(ticker.MaxNLocator(10, integer=True))
-    ax[0].bar(np.linspace(1,args.num_terms, args.num_terms), np.abs(coeffs))
+    ax[0].bar(idx, np.abs(coeffs))
+
     ax[1].plot(x, initial_condition(args.pick_position, x), label=f'Exact initial condition')
     for n in range(1, min(args.num_terms,3)+1):
         ax[1].plot(x, np.matmul(basis[:, 0:n], coeffs[0:n]), label=f'Expansion with {n} terms')
     ax[1].plot(x, u0, label=f'Series expansion of u_0 with {args.num_terms} terms')
     ax[1].legend()
+
+    mask = np.where(np.logical_and(args.hole_position[0] < x, x < args.hole_position[1]),
+                          1.,
+                          0.)
+    time_coeffs = coeffs * np.matmul(mask, basis)
+    t = np.linspace(0, 10, 201)
+    time_basis = eval_time_basis(args.num_terms, t)
+
+    ax[2].xaxis.set_major_locator(ticker.MaxNLocator(10, integer=True))
+    ax[2].bar(idx, np.abs(time_coeffs))
+
+    ax[3].plot(t, np.matmul(time_basis, time_coeffs))
+
     plt.show()
 
 
@@ -77,6 +97,7 @@ def parse_args():
     parser = ArgumentParser(description='Visualize the vibration modes of a guitar string')
     parser.add_argument('--num-terms', '-N', type=int, default=20)
     parser.add_argument('--pick-position', '-x0', type=float_in_interval(0.,1.), default='0.5')
+    parser.add_argument('--hole_position', '-H', type=float_in_interval(0., 1.), nargs=2, default=(0.666, 0.8) )
     args = parser.parse_args()
     return args
 
@@ -99,6 +120,13 @@ def eval_basis(num_terms: int, x):
     b = np.zeros((x.size, num_terms))
     for i in range(num_terms):
         b[:, i] = np.sin(np.pi * (i+1) * x)
+    return b
+
+
+def eval_time_basis(num_terms: int, t):
+    b = np.zeros((t.size, num_terms))
+    for i in range(num_terms):
+        b[:, i] = np.cos(np.pi * (i+1) * t)
     return b
 
 

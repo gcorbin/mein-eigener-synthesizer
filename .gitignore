@@ -1,3 +1,14 @@
+# SPDX-FileCopyrightText: 2026 Gregor Corbin <gregor.corbin@posteo.de>
+#
+# SPDX-License-Identifier: CC0-1.0
 *
-!.gitignore
-!*.py
+!*/
+
+!./.gitignore
+!README.md
+!requirements.txt
+
+!/*.py
+!eigensynth/
+!eigensynth/**/*.py
+!LICENSES/*.txt
