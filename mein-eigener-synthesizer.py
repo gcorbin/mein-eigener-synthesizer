@@ -34,10 +34,13 @@ if __name__ == '__main__':
 
     t = np.atleast_2d(np.arange(0, dur, 1./samplerate)).transpose()
 
-    k, d = damped_oscillator_coefficients(base_freq, halflife)
-    u_k = damped_oscillator(t, -4. * L**2 * base_freq**2 * lam_k, d, u0_k, 0.)
-    print(f'base k @ 880 Hz = {k}, d = {d}')
-    print(f'actual k = {-4. * L**2 * base_freq**2 * lam_k}')
+    ks, kd = damped_oscillator_coefficients(base_freq, halflife)
+    # Damped 1-D wave equation
+    # u_tt   + kd * u_t   - c^2 * u_xx          = 0
+    # Use Eigen-decomposition with d_xx u_k = lam u_k
+    # u_k_tt + kd * u_k_t - c^2 * lam_k * u_k   = 0, k = 1,...,N
+    c2 = ks / np.abs(lam_k[0])  # choose wave speed c such that the oscillator has the given base frequency
+    u_k = damped_oscillator(t, -c2 * lam_k, kd, u0_k, 0.)
 
     # We don't need to evaluate the full solution
     #U = np.matmul(u_k, e_k)

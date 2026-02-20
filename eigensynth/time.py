@@ -8,6 +8,11 @@ def oscillator_stiffness_from_frequency(freq):
     return (freq * 2. * np.pi)**2
 
 
+def oscillator_frequency(k):
+    assert k > 0
+    return np.sqrt(k) / ( 2 * np.pi)
+
+
 def oscillator(t, k, x0=1., dx0=0.):
     """
     Evaluate solutions of the harmonic oscillator equation at the given times.

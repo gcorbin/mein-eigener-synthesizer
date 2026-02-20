@@ -6,10 +6,10 @@ import numpy as np
 
 def laplace_1d_eigen(x, N, L=1.):
     """
-    Eigenfunctions and eigenvalues of the 1D Laplace operator ( c^2 d_xx u)
-    on the interval [0,L] with zero Dirichlet boundary conditions, i.e.
+    Eigenfunctions and eigenvalues of the 1D Laplace operator ( d_xx u)
+    on the interval [0,L] with zero Dirichlet boundary conditions, i.e.,
 
-    u_k(x) such that c^2 d_xx u_k = lambda_k * u_k, k = 1, ..., N
+    u_k(x) such that d_xx u_k = lambda_k * u_k, k = 1, ..., N
 
     evaluated at x.
 
