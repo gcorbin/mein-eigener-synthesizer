@@ -12,6 +12,10 @@ def samples(samplerate, duration):
     return np.arange(0, duration, 1. / samplerate)
 
 
+def normalize(a, axis=None):
+    return a / np.max(a, axis)
+
+
 if __name__ == '__main__':
     samplerate = 44100  # Hz
     duration = 2  # seconds
@@ -20,9 +24,10 @@ if __name__ == '__main__':
     string = String(opts)
 
     t = samples(samplerate, duration)
-    x_out = 0.8 * string.options.L
+    x_out = string.options.L * np.arange(0.6, 0.8, 0.02)
+    #x_out = string.options.L * 0.7
 
-    sound = string.sound(t, x_out)
+    sound = normalize(np.sum(string.sound(t, x_out), axis=1))
 
     N = 4000
     fig, ax = plt.subplots(2,1)
