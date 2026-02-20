@@ -16,18 +16,28 @@ def normalize(a, axis=None):
     return a / np.max(a, axis)
 
 
+def minor_chord(base_frequency):
+    return base_frequency * np.pow(2., np.array([0., 3./12., 7./12.]))
+
+
+def major_chord(base_frequency):
+    return base_frequency * np.pow(2., np.array([0., 4./12., 7./12.]))
+
+
 if __name__ == '__main__':
     samplerate = 44100  # Hz
     duration = 2  # seconds
 
-    opts = StringOptions(base_frequency=440)
-    string = String(opts)
+    L = 1
+    opts = [StringOptions(base_frequency=f, L=L) for f in minor_chord(440)]
+    strings = [String(o) for o in opts]
 
     t = samples(samplerate, duration)
-    x_out = string.options.L * np.arange(0.6, 0.8, 0.02)
-    #x_out = string.options.L * 0.7
+    x_out = L * np.arange(0.6, 0.8, 0.02)
+    #x_out = L * 0.7
 
-    sound = normalize(np.sum(string.sound(t, x_out), axis=1))
+    sounds = np.stack([normalize(np.sum(s.sound(t, x_out), axis=1)) for s in strings])
+    sound = normalize(np.sum(sounds, axis=0))
 
     N = 4000
     fig, ax = plt.subplots(2,1)
@@ -39,5 +49,7 @@ if __name__ == '__main__':
     f = np.fft.rfftfreq(N, d = 1./samplerate)
     ax[1].plot(f, np.abs(Uf), label='U, amplitude spectrum')
     ax[1].legend()
+    ax[1].loglog()
+    plt.grid()
     plt.show()
     writer.write_soundfile('string', sound, samplerate)
