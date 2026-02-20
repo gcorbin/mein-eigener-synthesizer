@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 from eigensynth import writer
-from eigensynth.time import oscillator, damped_oscillator, damped_oscillator_coefficients, c2_from_frequency
+from eigensynth.time import oscillator, damped_oscillator, damped_oscillator_coefficients, oscillator_stiffness_from_frequency
 from eigensynth.space import laplace_1d_eigen
 
 import numpy as np
@@ -34,10 +34,10 @@ if __name__ == '__main__':
 
     t = np.atleast_2d(np.arange(0, dur, 1./samplerate)).transpose()
 
-    c2, d = damped_oscillator_coefficients(base_freq, halflife)
+    k, d = damped_oscillator_coefficients(base_freq, halflife)
     u_k = damped_oscillator(t, -4. * L**2 * base_freq**2 * lam_k, d, u0_k, 0.)
-    print(f'base c^2 @ 880 Hz = {c2}, d = {d}')
-    print(f'actual c^2 = {-4. * L**2 * base_freq**2 * lam_k}')
+    print(f'base k @ 880 Hz = {k}, d = {d}')
+    print(f'actual k = {-4. * L**2 * base_freq**2 * lam_k}')
 
     # We don't need to evaluate the full solution
     #U = np.matmul(u_k, e_k)
