@@ -3,20 +3,15 @@
 # SPDX-License-Identifier: CC0-1.0
 from matplotlib.ticker import FuncFormatter
 
-from eigensynth import writer
+from eigensynth.sounds import write_soundfile, play_sound, normalize
 from eigensynth.instruments.string import String, StringOptions
 
 import numpy as np
 from matplotlib import pyplot as plt
-import sounddevice
 
 
 def samples(samplerate, duration):
     return np.arange(0, duration, 1. / samplerate)
-
-
-def normalize(a, axis=None):
-    return a / np.max(a, axis)
 
 
 def minor_chord(base_frequency):
@@ -25,10 +20,6 @@ def minor_chord(base_frequency):
 
 def major_chord(base_frequency):
     return base_frequency * np.pow(2., np.array([0., 4./12., 7./12.]))
-
-
-def play_sound(sound, samplerate, blocking=False):
-    sounddevice.play((sound*32768).astype(np.int16), samplerate, blocking=blocking)
 
 
 if __name__ == '__main__':
@@ -48,7 +39,7 @@ if __name__ == '__main__':
     sound = normalize(np.sum(sounds, axis=0))
 
     play_sound(sound, samplerate)
-    writer.write_soundfile('string', sound, samplerate)
+    write_soundfile('string', sound, samplerate)
 
     N = 4000
     fig, ax = plt.subplots(2,1)
@@ -77,4 +68,3 @@ if __name__ == '__main__':
     ax[1].set_xlabel(f'log2(f/{int(base_freq)} Hz)')
     ax[1].set_ylabel('Power / dB')
     plt.show()
-    writer.write_soundfile('string', sound, samplerate)

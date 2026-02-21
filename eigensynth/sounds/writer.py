@@ -5,6 +5,7 @@ import soundfile as sf
 from pathlib import Path
 import numpy as np
 
+__all__=['write_soundfile']
 
 def write_soundfile(filename: str | Path, data, samplerate):
     filepath = Path(filename).with_suffix('.wav')
