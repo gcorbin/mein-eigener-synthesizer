@@ -111,7 +111,7 @@ def on_press(key, samplerate, sound_lib):
     try:
         sound = sound_lib[key.char]
         if not sound.is_empty():
-            print(f'{sound.name}')
+            print(f'{sound.name}', end=' ')
             sound.reset()
     except AttributeError:
         #print('special key {0} pressed'.format(key))
