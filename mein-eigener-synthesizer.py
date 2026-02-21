@@ -40,6 +40,12 @@ class Sound:
 
 def main():
     args = parse_program_args()
+    if args.list_devices:
+        try:
+            print(sd.query_devices(args.device))
+        except ValueError as err:
+            print(err)
+        return 0
 
     samplerate = 44100  # Hz
     sound_lib = make_sound_lib(samplerate, args.base, args.octave)
@@ -48,16 +54,18 @@ def main():
         fill_output_stream(outdata, req_frames, time, status, sound_lib)
 
     with sd.OutputStream(samplerate=samplerate,
-                         #device=args.device, # default device for now
+                         device=args.device,
                          dtype=np.int16,
                          channels=1, #  mono for all
-                         callback=_fill_output_stream):
-        print("Synthesizer ready. Press Enter to exit the program.")
+                         callback=_fill_output_stream) as stream:
+        print(f"Synthesizer streaming to device {stream.device}: '{sd.query_devices(stream.device)["name"]}'.\n"
+              f"Press Enter to exit the program.")
         listener = keyboard.Listener(
             on_press=lambda key: on_press(key, samplerate, sound_lib),
             suppress=True)
         listener.start()
         listener.join()
+    return 0
 
 
 keybindings = ('a', 'w', 's', 'e', 'd', 'f', 't', 'g', 'y', 'h', 'u', 'j', 'k', 'o', 'l', 'p')
@@ -66,10 +74,15 @@ note_indices = {n: i for i,n in enumerate(notes)}
 
 
 def parse_program_args():
-    parser = ArgumentParser(description="Play sounds on key presses")
-    parser.add_argument('--device')
-    parser.add_argument('--base', default='C', choices=notes)
-    parser.add_argument('--octave', type=int, default=4)
+    parser = ArgumentParser(description="Simple electronic keyboard / synthesizer")
+    parser.add_argument('--device', type=int_or_str,
+                        help='output device (numeric ID or substring)')
+    parser.add_argument('--list-devices', '-l', action='store_true',
+                        help='print devices matching the --devices arg and exit')
+    parser.add_argument('--base', default='C', choices=notes,
+                        help='the key of the music scale')
+    parser.add_argument('--octave', type=int, default=4,
+                        help='the octave of the music scale')
     args = parser.parse_args()
     return args
 
@@ -111,7 +124,7 @@ def on_press(key, samplerate, sound_lib):
     try:
         sound = sound_lib[key.char]
         if not sound.is_empty():
-            print(f'{sound.name}', end=' ')
+            print(f'{sound.name}', end=' ', flush=True)
             sound.reset()
     except AttributeError:
         #print('special key {0} pressed'.format(key))
@@ -130,5 +143,15 @@ def fill_output_stream(outdata, req_frames, time, status, sound_lib):
     outdata[:] = buf.reshape(-1, 1)
 
 
+
+def int_or_str(text):
+    """Helper function for argument parsing."""
+    try:
+        return int(text)
+    except ValueError:
+        return text
+
+
 if __name__ == '__main__':
-    main()
+    return_code = main()
+    exit(return_code)
