@@ -10,9 +10,9 @@ from pynput import keyboard
 import numpy as np
 import sounddevice as sd
 
-from eigensynth.sounds import write_soundfile, play_sound, normalize
+from eigensynth.sounds import normalize
 from eigensynth.instruments.string import String, StringOptions
-from eigensynth.sounds.play import convert_for_sounddevice
+from eigensynth.sounds import convert_for_sounddevice
 from eigensynth.time import samples
 
 
@@ -42,31 +42,7 @@ def main():
     args = parse_program_args()
 
     samplerate = 44100  # Hz
-    damping_halflife = 0.05  # seconds
-    duration = 20 * damping_halflife  # seconds
-    base_frequency = 440.  # Hz
-
-    num_strings = 13
-    frequencies = base_frequency * np.pow(2., 1./12. * np.linspace(0, 12, num_strings))
-    opts = [StringOptions(base_frequency=f) for f in frequencies]
-    strings = [String(o) for o in opts]
-
-    t = samples(samplerate, duration)
-
-    # emulate the hole of an acoustic guitar by integrating the solution over this domain
-    # this makes a muffled sound
-    x_out = np.arange(0.6, 0.8, 0.02)
-
-    # emulate a single pickup of an electric guitar by using a single point for evaluation
-    # this makes a crisp sound
-    #x_out = 0.7
-
-    notes =['C',  'C#',  'D',   'D#',  'E',   'F',   'F#',  'G',   'G#',  'A',   'A#',  'B',   'C']
-    keys = ['a', 'w', 's', 'e', 'd', 'f', 't', 'g', 'y', 'h', 'u', 'j', 'k']
-    sounds = [
-        convert_for_sounddevice(normalize(np.sum(s.sound(t, x_out), axis=1), scale=0.2), mode='clip')
-        for i, s in enumerate(strings)]
-    sound_lib = DefaultDict(Sound, {k:Sound(name=n, sound=s) for k,n,s in zip(keys, notes, sounds)})
+    sound_lib = make_sound_lib(samplerate, args.base, args.octave)
 
     def _fill_output_stream(outdata, req_frames, time, status):
         fill_output_stream(outdata, req_frames, time, status, sound_lib)
@@ -84,10 +60,51 @@ def main():
         listener.join()
 
 
+keybindings = ('a', 'w', 's', 'e', 'd', 'f', 't', 'g', 'y', 'h', 'u', 'j', 'k', 'o', 'l', 'p')
+notes = ('C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B')
+note_indices = {n: i for i,n in enumerate(notes)}
+
+
 def parse_program_args():
     parser = ArgumentParser(description="Play sounds on key presses")
     parser.add_argument('--device')
+    parser.add_argument('--base', default='C', choices=notes)
+    parser.add_argument('--octave', type=int, default=4)
     args = parser.parse_args()
+    return args
+
+
+def make_sound_lib(samplerate, note: str='C', octave: int=4):
+    num_sounds = len(keybindings)
+
+    damping_halflife = 0.05  # seconds
+    duration = 20 * damping_halflife  # seconds
+
+    A4 = 440.  # Hz
+    C4 = A4 * np.pow(2., -9./12.)
+    shift = note_indices[note] + 12 * (octave - 4)
+
+    t = samples(samplerate, duration)
+
+    # emulate the hole of an acoustic guitar by integrating the solution over this domain
+    # this makes a muffled sound
+    x_out = np.arange(0.6, 0.8, 0.02)
+
+    # emulate a single pickup of an electric guitar by using a single point for evaluation
+    # this makes a crisp sound
+    #x_out = 0.7
+
+    sound_lib = DefaultDict(Sound)
+    for i in range(0, num_sounds):
+        frequency = C4 * np.pow(2., (i + shift) * 1./12)
+        opt = StringOptions(base_frequency=frequency)
+        string = String(opt)
+
+        sound = convert_for_sounddevice(normalize(np.sum(string.sound(t, x_out), axis=1), scale=0.2), mode='clip')
+
+        cur_octave = (octave * 12 + i + shift ) // 12
+        sound_lib[keybindings[i]] = Sound(name=f'{notes[(i + shift) % 12]}{cur_octave}', sound=sound)
+    return sound_lib
 
 
 def on_press(key, samplerate, sound_lib):

@@ -5,7 +5,7 @@ import numpy as np
 import sounddevice
 from .utils import normalize
 
-__all__=['play_sound']
+__all__=['convert_for_sounddevice', 'play_sound']
 
 def convert_for_sounddevice(sound, mode='clip'):
     if mode == 'clip':
