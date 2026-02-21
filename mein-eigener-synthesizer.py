@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: None
 #
 # SPDX-License-Identifier: CC0-1.0
-import time
+from matplotlib.ticker import FuncFormatter
 
 from eigensynth import writer
 from eigensynth.instruments.string import String, StringOptions
@@ -35,8 +35,9 @@ if __name__ == '__main__':
     samplerate = 44100  # Hz
     duration = 2  # seconds
 
-    L = 1
-    opts = [StringOptions(base_frequency=f, L=L) for f in minor_chord(440)]
+    L = 1.
+    base_freq = 440.
+    opts = [StringOptions(base_frequency=f, L=L) for f in minor_chord(base_freq)]
     strings = [String(o) for o in opts]
 
     t = samples(samplerate, duration)
@@ -55,11 +56,25 @@ if __name__ == '__main__':
     ax[0].plot(t[0:N], sound[0:N], label='U(t, x=0.5)')
     ax[0].legend()
 
-    Uf = np.fft.rfft(sound[0:N], axis=0)
-    f = np.fft.rfftfreq(N, d = 1./samplerate)
-    ax[1].plot(f, np.abs(Uf), label='U, amplitude spectrum')
+    Uf = np.fft.rfft(sound[0:N], axis=0)[1:]  # Discard 0Hz (constant) component
+    f = np.fft.rfftfreq(N, d = 1./samplerate)[1:] # Discard 0Hz (constant) component
+    # Getting tick positions and labels right in an axis with log scale is too much hassle.
+    # Instead, this plot uses a linear x scale with log-scaled x-values
+    f_octave = np.log2(f / base_freq)  #  Convert frequencies to octaves above the base frequency
+    ax[1].plot(f_octave, np.pow(np.abs(Uf), 2.), label='U, amplitude spectrum')
+    ax[1].set_xscale("linear")
+    ax[1].set_yscale("log", base=10)
     ax[1].legend()
-    ax[1].loglog()
-    plt.grid()
+    # Major ticks on all integers in the data range
+    x_majorticks = np.arange(np.min(f_octave), np.max(f_octave), 1, dtype=int)
+    # Subdivide each major tick interval into 3 minor intervals
+    x_minorticks = (np.atleast_2d(x_majorticks).transpose() + np.array([1./3., 2./3.], ndmin=2)).flatten()
+    ax[1].set_xticks(x_majorticks)
+    ax[1].set_xticks(x_minorticks, labels=(), minor=True)
+    ax[1].yaxis.set_major_formatter(FuncFormatter(lambda val, pos: f"{int(10*np.log10(val))}"))
+    ax[1].grid(which='major', alpha=0.5)
+    ax[1].grid(which='minor', alpha=0.3, linestyle='--')
+    ax[1].set_xlabel(f'log2(f/{int(base_freq)} Hz)')
+    ax[1].set_ylabel('Power / dB')
     plt.show()
     writer.write_soundfile('string', sound, samplerate)
