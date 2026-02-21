@@ -26,16 +26,26 @@ if __name__ == '__main__':
     samplerate = 44100  # Hz
     duration = 2  # seconds
 
-    L = 1.
-    base_freq = 440.
+    delay_fan = 0.01  # seconds, emulate strumming with delay between two consecutive sounds in the chord
+
+    L = 1.  # meter, Length of the string
+    base_freq = 440.  # Hz
     opts = [StringOptions(base_frequency=f, L=L) for f in minor_chord(base_freq)]
     strings = [String(o) for o in opts]
 
     t = samples(samplerate, duration)
+
+    # emulate the hole of an acoustic guitar by integrating the solution over this domain
+    # this makes a muffled sound
     x_out = L * np.arange(0.6, 0.8, 0.02)
+
+    # emulate a single pickup of an electric guitar by using a single point for evaluation
+    # this makes a crisp sound
     #x_out = L * 0.7
 
-    sounds = np.stack([normalize(np.sum(s.sound(t, x_out), axis=1)) for s in strings])
+    sounds = np.stack([
+        np.sum(s.sound(t-i*delay_fan, x_out), axis=1)
+        for i,s in enumerate(strings)])
     sound = normalize(np.sum(sounds, axis=0))
 
     play_sound(sound, samplerate)

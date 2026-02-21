@@ -43,7 +43,7 @@ def oscillator(t, k, x0=1., dx0=0.):
     """
     assert np.all(k > 0)
     c = np.sqrt(k)
-    return x0 * np.cos(c * t) + dx0 / c * np.sin(c * t)
+    return np.where(t >= 0., x0 * np.cos(c * t) + dx0 / c * np.sin(c * t), 0.)
 
 
 def damped_oscillator_coefficients(freq, halflife):
@@ -111,4 +111,4 @@ def damped_oscillator(t, k, d, x0=1., dx0=0.):
     alpha = x0
     beta = ( dx0 + d / 2 * x0 ) / gamma
 
-    return ( alpha * np.cos(gamma * t) + beta * np.sin(gamma * t) ) * np.exp( - d / 2. * t)
+    return np.where( t >= 0., ( alpha * np.cos(gamma * t) + beta * np.sin(gamma * t) ) * np.exp( - d / 2. * t), 0.)
