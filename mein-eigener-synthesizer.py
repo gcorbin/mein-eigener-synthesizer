@@ -1,11 +1,14 @@
 # SPDX-FileCopyrightText: None
 #
 # SPDX-License-Identifier: CC0-1.0
+import time
+
 from eigensynth import writer
 from eigensynth.instruments.string import String, StringOptions
 
 import numpy as np
 from matplotlib import pyplot as plt
+import sounddevice
 
 
 def samples(samplerate, duration):
@@ -24,6 +27,10 @@ def major_chord(base_frequency):
     return base_frequency * np.pow(2., np.array([0., 4./12., 7./12.]))
 
 
+def play_sound(sound, samplerate, blocking=False):
+    sounddevice.play((sound*32768).astype(np.int16), samplerate, blocking=blocking)
+
+
 if __name__ == '__main__':
     samplerate = 44100  # Hz
     duration = 2  # seconds
@@ -38,6 +45,9 @@ if __name__ == '__main__':
 
     sounds = np.stack([normalize(np.sum(s.sound(t, x_out), axis=1)) for s in strings])
     sound = normalize(np.sum(sounds, axis=0))
+
+    play_sound(sound, samplerate)
+    writer.write_soundfile('string', sound, samplerate)
 
     N = 4000
     fig, ax = plt.subplots(2,1)
