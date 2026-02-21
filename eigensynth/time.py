@@ -112,3 +112,7 @@ def damped_oscillator(t, k, d, x0=1., dx0=0.):
     beta = ( dx0 + d / 2 * x0 ) / gamma
 
     return np.where( t >= 0., ( alpha * np.cos(gamma * t) + beta * np.sin(gamma * t) ) * np.exp( - d / 2. * t), 0.)
+
+
+def samples(samplerate, duration):
+    return np.arange(0, duration, 1. / samplerate)

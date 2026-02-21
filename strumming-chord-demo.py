@@ -9,9 +9,7 @@ from eigensynth.instruments.string import String, StringOptions
 import numpy as np
 from matplotlib import pyplot as plt
 
-
-def samples(samplerate, duration):
-    return np.arange(0, duration, 1. / samplerate)
+from eigensynth.time import samples
 
 
 def minor_chord(base_frequency):
