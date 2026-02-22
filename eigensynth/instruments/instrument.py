@@ -8,6 +8,7 @@ from dataclasses import dataclass
 
 from eigensynth.time import damped_oscillator_coefficients, damped_oscillator
 
+__all__ = ['InstrumentOptions', 'Instrument']
 
 @dataclass(init=True)
 class InstrumentOptions:
@@ -16,6 +17,7 @@ class InstrumentOptions:
     L: float = 1.  # meter
     Nk: int = 20
     Nx: int = 100
+    pick_pos: float = 0.8  # relative to length
 
 
 class Instrument(ABC):
@@ -35,9 +37,30 @@ class Instrument(ABC):
     def compute_eigen(self, x):
         return np.zeros((self.options.Nk, x.size)), np.ones(self.options.Nk)
 
-    @abstractmethod
     def _compute_initial_coefficients(self):
-        return np.zeros((self.options.Nk,))
+        """
+        Initial condition corresponding to a stationary loaded state
+
+            -c^2 * Dx(u0) = q0
+            Dx(u0) = - q0 / c^2 = delta(x - x0)
+
+        with a point (dirac delta) force - c^2 * delta(x - x0)
+
+        Use the composition of u0 into eigenfunctions
+
+            Dx(u0)
+            = Dx (sum u0_l e_l)
+            = sum Dx(u0_l) e_l
+            = sum lam_l u0_l e_l = delta(x - x0)
+
+        Scalar product with e_k, using orthonormality of e_k gives
+
+            lam_k u0_k = <delta(x - x0),e_k> = e_k(x0)
+            u0_k = 1 / lam_k * e_k(x0)
+        """
+        x0 = np.array([self.options.pick_pos * self.options.L])
+        e_k_L, lam_k = self.compute_eigen(x0)
+        return 1. / np.abs(lam_k) * e_k_L.reshape((-1,))
 
     @property
     def initial_coefficients(self):
