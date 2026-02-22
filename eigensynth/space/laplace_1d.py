@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: CC0-1.0
 import numpy as np
 
+__all__ = ['laplace_1d_eigen']
+
 
 def laplace_1d_eigen(x, N, L=1.):
     """
