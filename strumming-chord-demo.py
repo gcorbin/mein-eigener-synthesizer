@@ -49,21 +49,22 @@ if __name__ == '__main__':
     play_sound(sound, samplerate)
     write_soundfile('string', sound, samplerate)
 
-    N = 4000
+    plot_samples = int(0.1 * samplerate)
     fig, ax = plt.subplots(2,1)
     #ax[0].plot(t[0:N], U[0:N, 50], label='U(t, x=0.5)')
-    ax[0].plot(t[0:N], sound[0:N], label='U(t, x=0.5)')
-    ax[0].legend()
+    ax[0].plot(t[0:plot_samples], sound[0:plot_samples], label='U(t, x=0.5)')
+    ax[0].set_xlabel(f'time / s')
+    ax[0].set_ylabel('x')
 
-    Uf = np.fft.rfft(sound[0:N], axis=0)[1:]  # Discard 0Hz (constant) component
-    f = np.fft.rfftfreq(N, d = 1./samplerate)[1:] # Discard 0Hz (constant) component
+    plot_samples = int(1 * samplerate)
+    Uf = np.fft.rfft(sound[0:plot_samples], axis=0)[1:]  # Discard 0Hz (constant) component
+    f = np.fft.rfftfreq(plot_samples, d =1. / samplerate)[1:] # Discard 0Hz (constant) component
     # Getting tick positions and labels right in an axis with log scale is too much hassle.
     # Instead, this plot uses a linear x scale with log-scaled x-values
     f_octave = np.log2(f / base_freq)  #  Convert frequencies to octaves above the base frequency
-    ax[1].plot(f_octave, np.pow(np.abs(Uf), 2.), label='U, amplitude spectrum')
+    ax[1].plot(f_octave, np.pow(np.abs(Uf), 2.))
     ax[1].set_xscale("linear")
     ax[1].set_yscale("log", base=10)
-    ax[1].legend()
     # Major ticks on all integers in the data range
     x_majorticks = np.arange(np.min(f_octave), np.max(f_octave), 1, dtype=int)
     # Subdivide each major tick interval into 3 minor intervals
