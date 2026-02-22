@@ -17,7 +17,8 @@ def convert_for_sounddevice(sound, mode='clip'):
     return (32768*funnel(sound)).astype(np.int16)
 
 
-def play_sound(sound, samplerate, mode='clip', blocking=False):
+def play_sound(sound, samplerate, mode='clip', blocking=False, device=None):
     sounddevice.play(convert_for_sounddevice(sound, mode),
                      samplerate,
-                     blocking=blocking)
+                     blocking=blocking,
+                     device=None)
