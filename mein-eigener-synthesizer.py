@@ -10,6 +10,7 @@ from pynput import keyboard
 import numpy as np
 import sounddevice as sd
 
+from eigensynth.instruments.beam import BeamOptions, Beam
 from eigensynth.sounds import normalize
 from eigensynth.instruments.string import String, StringOptions
 from eigensynth.sounds import convert_for_sounddevice
@@ -54,7 +55,7 @@ def main():
         return 0
 
     samplerate = 44100  # Hz
-    sound_lib = make_sound_lib(samplerate, args.base, args.octave, args.max_stack)
+    sound_lib = make_sound_lib(samplerate, args)
 
     def _fill_output_stream(outdata, req_frames, time, status):
         fill_output_stream(outdata, req_frames, time, status, sound_lib)
@@ -78,6 +79,21 @@ keybindings = ('a', 'w', 's', 'e', 'd', 'f', 't', 'g', 'y', 'h', 'u', 'j', 'k', 
 notes = ('C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B')
 note_indices = {n: i for i,n in enumerate(notes)}
 
+instruments = {'string': (String, StringOptions),
+               'beam': (Beam, BeamOptions)}
+
+
+sound_pickup = {
+    'clean': np.array([0.7]),
+    'muffled': np.arange(0.6, 0.8, 0.02)
+}
+
+excitation = {
+    'string': {'soft': 0.5, 'medium': 0.85, 'hard': 0.95},
+    'beam': {'soft': 1., 'medium': 0.5, 'hard': 0.2}
+}
+
+
 
 def parse_program_args():
     parser = ArgumentParser(description="Simple electronic keyboard / synthesizer")
@@ -89,46 +105,46 @@ def parse_program_args():
                         help='the key of the music scale')
     parser.add_argument('--octave', type=int, default=4,
                         help='the octave of the music scale')
-    parser.add_argument('--max-stack', type=int, default=1,
+    parser.add_argument('--max-stack', type=int, default=3,
                         help='times a sound can be played over itself')
+    parser.add_argument('--instrument', default='string', choices=instruments.keys(),
+                        help='the instrument to play')
+    parser.add_argument('--pickup', default='clean', choices=sound_pickup.keys(),
+                        help="whether the produced sounds are clean or muffled")
+    parser.add_argument('--excitation', default='medium', choices=excitation['string'].keys(),
+                        help="whether to produce a soft, medium, or hard sound")
+    parser.add_argument('--duration', type=float, default=2.,
+                        help='duration of played sounds')
     args = parser.parse_args()
     return args
 
 
-def make_sound_lib(samplerate, note: str='C', octave: int=4, max_stack: int=1):
+def make_sound_lib(samplerate, args):
     num_sounds = len(keybindings)
 
-    damping_halflife = 0.05  # seconds
-    duration = 20 * damping_halflife  # seconds
+    damping_halflife = args.duration / 10  # seconds
     amplitude = 0.4
 
     A4 = 440.  # Hz
     C4 = A4 * np.pow(2., -9./12.)
-    shift = note_indices[note] + 12 * (octave - 4)
+    shift = note_indices[args.base] + 12 * (args.octave - 4)
 
-    t = samples(samplerate, duration)
-
-    # emulate the hole of an acoustic guitar by integrating the solution over this domain
-    # this makes a muffled sound
-    x_out = np.arange(0.6, 0.8, 0.02)
-
-    # emulate a single pickup of an electric guitar by using a single point for evaluation
-    # this makes a crisp sound
-    #x_out = 0.7
+    t = samples(samplerate, args.duration)
+    x_out = sound_pickup[args.pickup]
 
     print("")
     sound_lib = DefaultDict(Sound)
     for i in range(0, num_sounds):
         print("\r"+" "*80+f"\rComputing sound {i+1} / {num_sounds}", end='', flush=True)
-        cur_octave = (octave * 12 + i + shift) // 12
+        cur_octave = (args.octave * 12 + i + shift) // 12
         sound_name = f'{notes[(i + shift) % 12]}{cur_octave}'
 
         frequency = C4 * np.pow(2., (i + shift) * 1./12)
-        opt = StringOptions(base_frequency=frequency)
-        string = String(opt)
+        opt = instruments[args.instrument][1](base_frequency=frequency, halflife=damping_halflife, pick_pos=excitation[args.instrument][args.excitation])
+        instrument = instruments[args.instrument][0](opt)
 
-        sound = convert_for_sounddevice(normalize(np.sum(string.sound(t, x_out), axis=1), scale=amplitude), mode='clip')
-        sound_lib[keybindings[i]] = Sound(name=sound_name, sound=sound, max_stack=max_stack)
+        sound = convert_for_sounddevice(normalize(np.sum(instrument.sound(t, x_out), axis=1), scale=amplitude), mode='clip')
+        sound_lib[keybindings[i]] = Sound(name=sound_name, sound=sound, max_stack=args.max_stack)
     print("\r"+" "*80+f"\rComputing sounds done")
     print("Key bindings:")
     print("  ".join([f"'{k}' = {s.name}" for k,s in sound_lib.items()]))
