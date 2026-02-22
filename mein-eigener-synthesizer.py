@@ -20,22 +20,28 @@ from eigensynth.time import samples
 class Sound:
     name: str = '0'
     sound: np.typing.NDArray = field(default_factory=lambda: np.zeros(0, dtype=np.int16))
-    playback_pos: int = field(default=0, init=False)
+    max_stack : int = 1
+    playback_pos: np.typing.NDArray = field(default_factory=lambda : np.zeros(0, dtype=int), init=False)
 
     def __post_init__(self):
-        self.playback_pos = self.sound.size
+        self.playback_pos = np.zeros(self.max_stack, dtype=int)
+        self.playback_pos[:] = self.sound.size
 
     def is_empty(self):
         return self.sound.size == 0
 
-    def advance(self, output, req_frames: int=0):
-        frames = min(req_frames, self.sound.size - self.playback_pos)
-        output[:frames] += self.sound[self.playback_pos:self.playback_pos + frames]
-        self.playback_pos += frames
-        return frames
+    def is_playing(self):
+        return np.any(self.playback_pos < self.sound.size)
 
-    def reset(self):
-        self.playback_pos = 0
+    def advance(self, output, req_frames: int=0):
+        for i in range(self.playback_pos.size):
+            frames = min(req_frames, self.sound.size - self.playback_pos[i])
+            output[:frames] += self.sound[self.playback_pos[i]:self.playback_pos[i] + frames]
+            self.playback_pos[i] += frames
+
+    def play(self):
+        self.playback_pos[np.argmax(self.playback_pos)] = 0
+
 
 
 def main():
@@ -48,7 +54,7 @@ def main():
         return 0
 
     samplerate = 44100  # Hz
-    sound_lib = make_sound_lib(samplerate, args.base, args.octave)
+    sound_lib = make_sound_lib(samplerate, args.base, args.octave, args.max_stack)
 
     def _fill_output_stream(outdata, req_frames, time, status):
         fill_output_stream(outdata, req_frames, time, status, sound_lib)
@@ -61,7 +67,7 @@ def main():
         print(f"Synthesizer streaming to device {stream.device}: '{sd.query_devices(stream.device)["name"]}'.\n"
               f"Press Enter to exit the program.")
         listener = keyboard.Listener(
-            on_press=lambda key: on_press(key, samplerate, sound_lib),
+            on_press=lambda key: on_press(key, sound_lib),
             suppress=True)
         listener.start()
         listener.join()
@@ -83,15 +89,18 @@ def parse_program_args():
                         help='the key of the music scale')
     parser.add_argument('--octave', type=int, default=4,
                         help='the octave of the music scale')
+    parser.add_argument('--max-stack', type=int, default=1,
+                        help='times a sound can be played over itself')
     args = parser.parse_args()
     return args
 
 
-def make_sound_lib(samplerate, note: str='C', octave: int=4):
+def make_sound_lib(samplerate, note: str='C', octave: int=4, max_stack: int=1):
     num_sounds = len(keybindings)
 
     damping_halflife = 0.05  # seconds
     duration = 20 * damping_halflife  # seconds
+    amplitude = 0.4
 
     A4 = 440.  # Hz
     C4 = A4 * np.pow(2., -9./12.)
@@ -107,25 +116,32 @@ def make_sound_lib(samplerate, note: str='C', octave: int=4):
     # this makes a crisp sound
     #x_out = 0.7
 
+    print("")
     sound_lib = DefaultDict(Sound)
     for i in range(0, num_sounds):
+        print("\r"+" "*80+f"\rComputing sound {i+1} / {num_sounds}", end='', flush=True)
+        cur_octave = (octave * 12 + i + shift) // 12
+        sound_name = f'{notes[(i + shift) % 12]}{cur_octave}'
+
         frequency = C4 * np.pow(2., (i + shift) * 1./12)
         opt = StringOptions(base_frequency=frequency)
         string = String(opt)
 
-        sound = convert_for_sounddevice(normalize(np.sum(string.sound(t, x_out), axis=1), scale=0.2), mode='clip')
-
-        cur_octave = (octave * 12 + i + shift ) // 12
-        sound_lib[keybindings[i]] = Sound(name=f'{notes[(i + shift) % 12]}{cur_octave}', sound=sound)
+        sound = convert_for_sounddevice(normalize(np.sum(string.sound(t, x_out), axis=1), scale=amplitude), mode='clip')
+        sound_lib[keybindings[i]] = Sound(name=sound_name, sound=sound, max_stack=max_stack)
+    print("\r"+" "*80+f"\rComputing sounds done")
+    print("Key bindings:")
+    print("  ".join([f"'{k}' = {s.name}" for k,s in sound_lib.items()]))
     return sound_lib
 
 
-def on_press(key, samplerate, sound_lib):
+
+def on_press(key, sound_lib):
     try:
         sound = sound_lib[key.char]
         if not sound.is_empty():
             print(f'{sound.name}', end=' ', flush=True)
-            sound.reset()
+            sound.play()
     except AttributeError:
         #print('special key {0} pressed'.format(key))
         if key is keyboard.Key.enter:
