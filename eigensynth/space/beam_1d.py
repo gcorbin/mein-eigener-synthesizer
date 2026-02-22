@@ -7,29 +7,28 @@ from scipy.optimize import root_scalar
 __all__ = ['cantilevered_beam_eigen']
 
 
-
 def cantilevered_beam_eigen(x, N, L=1.):
     """
+    Modes of the cantilevered beam.
+    Compute the eigenfunctions and eigenvalues of
+
+        -d_xxxx u = 0
+
+    on the interval [0,L],
+    with BC u(0) = d_x u(0) = d_xx u(0) = d_xxx u(0) = 0,
+    i.e. e_k such that -d_xxxx e_k = lambda_k * e_k, k = 1,...N.
+
     See https://en.wikipedia.org/wiki/Euler%E2%80%93Bernoulli_beam_theory#Dynamic_beam_equation
+    for details.
+    The modes e_k are orthogonal and normalized.
 
-    The dynamic beam equation (without load) is
-    EI d_xxxx u = -mu d_tt u
-
-    In our setting with u_tt - c^2 * Dx(u) = 0
-    set Dx(u) = - EI / mu * d_xxxx u
-    and c^2 = 1
-    stiffness = EI / mu
-
-    :param x:
-    :param N:
-    :param L:
-    :param stiffness:
-    :return:
+    :param x: Positions at which the modes are evaluated.
+    :param N: Number of modes
+    :param L: Length of the domain
+    :return: Modes and eigenvalues (e_k, lambda_k). e_k is an array with shape (N, x.size), lambda_k is a vector of length N
     """
-
-    # solve cosh(beta_k L) * cos(beta_k L) + 1 = 0
     beta_k = _roots_cosh_cos_plus_1(N) / L
-    lam_k = np.power(beta_k, 4.)
+    lam_k = -1. * np.power(beta_k, 4.)
 
     arg = beta_k.reshape(-1, 1) * np.atleast_2d(x)
     betaL = beta_k.reshape(-1,1) * L
@@ -43,7 +42,7 @@ def _roots_cosh_cos_plus_1(N):
     Find the first N roots of cosh(x_k) * cos(x_k) + 1 = 0
 
     :param N:
-    :return:
+    :return: Array containing the roots
     """
     def f(x):
         return np.cosh(x) * np.cos(x) + 1.

@@ -16,14 +16,14 @@ class BeamOptions(InstrumentOptions):
 class Beam(Instrument):
     def compute_eigen(self, x):
         e_k, lam_k = cantilevered_beam_eigen(x, N=self.options.Nk, L=self.options.L)
-        return e_k, -1. * lam_k
+        return e_k, lam_k
 
     def _compute_initial_coefficients(self):
         """
         u0_k = 1 / beta_k^4 / || e_k ||^2 * e_k(L)
 
-        lambda_k = beta_k^4
+        lambda_k = -beta_k^4
         ||e_k||^2 = 1
         """
         e_k_L, _ = self.compute_eigen(np.array([self.options.pick_pos * self.options.L]))
-        return 1. / self.lam_k * e_k_L.reshape((-1,))
+        return 1. / np.abs(self.lam_k) * e_k_L.reshape((-1,))
