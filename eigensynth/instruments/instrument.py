@@ -23,8 +23,8 @@ class Instrument(ABC):
                  options: InstrumentOptions):
         self._options = options
 
-        x = np.linspace(0., self.options.L, self.options.Nx)
-        self.e_k, self.lam_k = self.compute_eigen(x)
+        self.x = np.linspace(0., self.options.L, self.options.Nx)
+        self.e_k, self.lam_k = self.compute_eigen(self.x)
         self.u0_k = self._compute_initial_coefficients()  # Coefficients in expansion of initial condition U0 = sum_k u0_k * e_k(x)
 
     @property

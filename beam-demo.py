@@ -2,8 +2,9 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 from argparse import ArgumentParser
+from matplotlib import pyplot as plt
 
-from eigensynth.space import cantilevered_beam_eigen
+from eigensynth.instruments.beam import Beam, BeamOptions
 
 
 def main():
@@ -12,7 +13,17 @@ def main():
     samplerate = 44100  # Hz
     duration = 2  # seconds
 
+    opts = BeamOptions(Nk=5)
+    beam = Beam(opts)
 
+    fig, ax1 = plt.subplots(1, 1)
+    for i in range(beam.options.Nk):
+        ax1.plot(beam.x, beam.e_k[i, :], label=f'e_{i}')
+    ax1.set_xlabel('x / m')
+    ax1.set_ylabel('u')
+    ax1.legend()
+
+    plt.show()
     return 0
 
 

@@ -7,5 +7,5 @@ __all__ = ['cantilevered_beam_eigen']
 
 
 def cantilevered_beam_eigen(x, N, L, EI):
-    raise NotImplemented()
+#    raise NotImplemented()
     return np.zeros((N, x.size)), np.ones(N)
