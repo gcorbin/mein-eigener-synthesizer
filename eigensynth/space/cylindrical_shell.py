@@ -32,6 +32,12 @@ def cylindrical_shell_eigen(x: tuple[NDArray, NDArray], N: tuple[int, int], L: t
 
     Z, Theta = x
     # (z,theta,k)
-    e_k = np.sqrt(2. / np.pi / L_z) * np.sin(m.reshape(1,1,-1) * np.pi / L_z * np.atleast_3d(Z)) * np.cos(n.reshape(1,1,-1) * np.atleast_3d(Theta))
-    return e_k, gamma_k
+
+    # For each (m,n) there are two eigenfunctions: cos(n * theta ) and sin(n * theta)
+    eZ = np.sin(m.reshape(1, 1, -1) * np.pi / L_z * np.atleast_3d(Z))
+    e_k = (np.sqrt(2. / np.pi / L_z) * np.concatenate([
+                eZ * np.cos(n.reshape(1,1,-1) * np.atleast_3d(Theta)),
+                eZ * np.sin(n.reshape(1,1,-1) * np.atleast_3d(Theta))
+            ], axis=2))
+    return e_k, np.tile(gamma_k, 2)
 

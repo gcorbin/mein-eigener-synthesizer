@@ -26,7 +26,9 @@ def visualize_initial_condition():
 
     (m,n) = (20,20)
     e_k, gamma_k = cylindrical_shell_eigen((Z,Phi), (m,n), (L,a), shell_constant)
-    e0, _ = cylindrical_shell_eigen(np.meshgrid(np.array([0.8*L]), np.array([0.])), (m,n), (L,a), shell_constant)
+
+    forcing_point = np.meshgrid(np.array([0.8*L]), np.array([0.25 *  np.pi]))
+    e0, _ = cylindrical_shell_eigen(forcing_point, (m,n), (L,a), shell_constant)
     c0 = e0.reshape(-1) / gamma_k
     w0 = np.sum(c0.reshape(1,1,-1) * e_k, axis=2)
 
