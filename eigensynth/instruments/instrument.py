@@ -60,7 +60,7 @@ class Instrument(ABC):
         """
         x0 = np.array([self.options.pick_pos * self.options.L])
         e_k_L, lam_k = self.compute_eigen(x0)
-        return 1. / np.abs(lam_k) * e_k_L.reshape((-1,))
+        return 1. / lam_k * e_k_L.reshape((-1,))
 
     @property
     def initial_coefficients(self):
