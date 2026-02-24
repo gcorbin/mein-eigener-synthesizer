@@ -103,10 +103,10 @@ def animate_initial_condition(instrument, args):
     def animate(i):
         changed = []
         for k in range(min(i, len(lines1))):
-            lines1[k].set_ydata(instrument.e_k[k, :])
+            lines1[k].set_ydata(instrument.e_k[:, k])
             changed.append(lines1[k])
         if i > 0:
-            line2.set_ydata(np.sum(instrument.u0_k[:i].reshape(-1, 1) * instrument.e_k[:i, :], axis=0))
+            line2.set_ydata(np.inner(instrument.u0_k[:i], instrument.e_k[:, :i]))
             line2.set_label(f'U0 with {i} basis functions')
             legend = ax2.legend()
             changed.append(line2)

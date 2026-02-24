@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 import numpy as np
-from dataclasses import dataclass
 
 from eigensynth.time import damped_oscillator_coefficients, damped_oscillator
 
 __all__ = ['InstrumentOptions', 'Instrument']
+
 
 @dataclass(init=True)
 class InstrumentOptions:
@@ -35,7 +36,7 @@ class Instrument(ABC):
 
     @abstractmethod
     def compute_eigen(self, x):
-        return np.zeros((self.options.Nk, x.size)), np.ones(self.options.Nk)
+        return np.zeros((self.options.Nk,) + x.shape), np.ones(self.options.Nk)
 
     def _compute_initial_coefficients(self):
         """
@@ -58,9 +59,9 @@ class Instrument(ABC):
             lam_k u0_k = <delta(x - x0),e_k> = e_k(x0)
             u0_k = 1 / lam_k * e_k(x0)
         """
-        x0 = np.array([self.options.pick_pos * self.options.L])
+        x0 = self.options.pick_pos * self.options.L
         e_k_L, lam_k = self.compute_eigen(x0)
-        return 1. / lam_k * e_k_L.reshape((-1,))
+        return 1. / lam_k * e_k_L.ravel()
 
     @property
     def initial_coefficients(self):
@@ -68,6 +69,9 @@ class Instrument(ABC):
 
     def sound(self, t, x):
         ks, kd = damped_oscillator_coefficients(self.options.base_frequency, self.options.halflife)
+        t = np.atleast_1d(np.array(t))
+        assert t.ndim == 1
+        x = np.atleast_1d(np.array(x))
         # Damped 1-D wave equation
         # u_tt   + kd * u_t   - c^2 * Dx(u) = 0
         # Use Eigen-decomposition of Dx: Dx(u_k) = lam u_k
@@ -77,11 +81,11 @@ class Instrument(ABC):
         # assume eigenvalues are sorted in descending magnitude
         c2 = ks / np.abs(self.lam_k[0])
         u_k = damped_oscillator(
-            t=t.reshape(-1, 1),
+            t=t,
             k=-c2 * self.lam_k,
             d=kd,
             x0=self.u0_k,
             dx0=0.)
 
         e_out, _ = self.compute_eigen(x)
-        return np.matmul(u_k, e_out)
+        return np.inner(u_k, e_out)

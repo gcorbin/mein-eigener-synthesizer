@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: None
 #
 # SPDX-License-Identifier: CC0-1.0
-import numpy as np
 from dataclasses import dataclass
 
 from eigensynth.instruments.instrument import InstrumentOptions, Instrument
@@ -12,7 +11,7 @@ __all__ = ['BeamOptions', 'Beam']
 
 @dataclass(init=True)
 class BeamOptions(InstrumentOptions):
-    pick_pos : float = 1.
+    pick_pos: float = 1.
 
 
 class Beam(Instrument):
