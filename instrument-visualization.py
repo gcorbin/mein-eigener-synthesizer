@@ -9,6 +9,7 @@ import matplotlib.animation as animation
 from matplotlib.ticker import FuncFormatter
 
 from eigensynth.instruments import InstrumentOptions, Beam, String
+from eigensynth.plot import plot_sound_signal, plot_sound_spectrum
 from eigensynth.sounds import play_sound
 from eigensynth.time import samples
 
@@ -43,30 +44,9 @@ def show_sound(instrument, args):
 
     plot_samples = int(0.1 * samplerate)
     fig, (ax1, ax2) = plt.subplots(2,1)
-    ax1.plot(t[0:plot_samples], sound[0:plot_samples], label='U(t, x=0.5)')
-    ax1.set_xlabel(f'time / s')
-    ax1.set_ylabel('x')
-
+    plot_sound_signal(ax1, t[0:plot_samples], sound[0:plot_samples], label='sound')
     plot_samples = int(1 * samplerate)
-    Uf = np.fft.rfft(sound[0:plot_samples], axis=0)[1:]  # Discard 0Hz (constant) component
-    f = np.fft.rfftfreq(plot_samples, d =1. / samplerate)[1:] # Discard 0Hz (constant) component
-    # Getting tick positions and labels right in an axis with log scale is too much hassle.
-    # Instead, this plot uses a linear x scale with log-scaled x-values
-    f_octave = np.log2(f / instrument.options.base_frequency)  #  Convert frequencies to octaves above the base frequency
-    ax2.plot(f_octave, np.pow(np.abs(Uf), 2.))
-    ax2.set_xscale("linear")
-    ax2.set_yscale("log", base=10)
-    # Major ticks on all integers in the data range
-    x_majorticks = np.arange(np.min(f_octave), np.max(f_octave), 1, dtype=int)
-    # Subdivide each major tick interval into 3 minor intervals
-    x_minorticks = (np.atleast_2d(x_majorticks).transpose() + np.array([1./3., 2./3.], ndmin=2)).flatten()
-    ax2.set_xticks(x_majorticks)
-    ax2.set_xticks(x_minorticks, labels=(), minor=True)
-    ax2.yaxis.set_major_formatter(FuncFormatter(lambda val, pos: f"{int(10*np.log10(val))}"))
-    ax2.grid(which='major', alpha=0.5)
-    ax2.grid(which='minor', alpha=0.3, linestyle='--')
-    ax2.set_xlabel(f'log2(f/{int(instrument.options.base_frequency)} Hz)')
-    ax2.set_ylabel('Power / dB')
+    plot_sound_spectrum(ax2, sound[0:plot_samples], samplerate, base_frequency=instrument.options.base_frequency, label='sound')
     plt.show()
 
 
