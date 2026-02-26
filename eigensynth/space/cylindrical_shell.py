@@ -7,6 +7,8 @@ from numpy.typing import NDArray
 
 from eigensynth.array import outer_product_nd
 
+__all__ = ['cylindrical_shell_eigen']
+
 
 def cylindrical_shell_eigen(x: tuple[NDArray, NDArray], N: tuple[int, int], L: tuple[float, float],
                             shell_constant=5.e5):
@@ -35,9 +37,9 @@ def cylindrical_shell_eigen(x: tuple[NDArray, NDArray], N: tuple[int, int], L: t
     m = np.repeat(np.arange(1, N_z + 1, 1, dtype=int), N_theta)  # slow index
     n = np.tile(np.arange(1, N_theta + 1, 1, dtype=int), N_z)  # fast index
 
-    lam_k = -1. * (np.power(np.pi * m / L_z, 4) + 2. + np.power(np.pi / L_z / a * m * n, 2) + np.power(n / a, 4))
+    lam_k = -1. * (np.power(np.pi * m / L_z, 4) + 2. * np.power(np.pi / L_z / a * m * n, 2) + np.power(n / a, 4))
     kappa_k = np.power(m * np.pi / L_z, 2)
-    gamma_k = lam_k + shell_constant * np.power(a, -4) * np.power(kappa_k, 2) * np.power(lam_k, -1)
+    gamma_k = lam_k + shell_constant / np.power(a, 4) * np.power(kappa_k, 2) / lam_k
 
     # For each (m,n) there are two eigenfunctions: cos(n * theta ) and sin(n * theta)
     eZ = np.sin(outer_product_nd(Z, m) * np.pi / L_z)
