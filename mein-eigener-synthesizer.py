@@ -10,11 +10,11 @@ from pynput import keyboard
 import numpy as np
 import sounddevice as sd
 
-from eigensynth.instruments.beam import BeamOptions, Beam
 from eigensynth.sounds import normalize
-from eigensynth.instruments.string import String, StringOptions
+from eigensynth.instrument import Instrument
+from eigensynth.space import String, Beam
 from eigensynth.sounds import convert_for_sounddevice
-from eigensynth.time import samples
+from eigensynth.time import samples, oscillator
 
 
 @dataclass
@@ -79,8 +79,8 @@ keybindings = ('a', 'w', 's', 'e', 'd', 'f', 't', 'g', 'y', 'h', 'u', 'j', 'k', 
 notes = ('C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B')
 note_indices = {n: i for i,n in enumerate(notes)}
 
-instruments = {'string': (String, StringOptions),
-               'beam': (Beam, BeamOptions)}
+oscillators = {'string': String,
+               'beam': Beam}
 
 
 sound_pickup = {
@@ -107,7 +107,7 @@ def parse_program_args():
                         help='the octave of the music scale')
     parser.add_argument('--max-stack', type=int, default=3,
                         help='times a sound can be played over itself')
-    parser.add_argument('--instrument', default='string', choices=instruments.keys(),
+    parser.add_argument('--instrument', default='string', choices=oscillators.keys(),
                         help='the instrument to play')
     parser.add_argument('--pickup', default='clean', choices=sound_pickup.keys(),
                         help="whether the produced sounds are clean or muffled")
@@ -131,6 +131,7 @@ def make_sound_lib(samplerate, args):
 
     t = samples(samplerate, args.duration)
     x_out = sound_pickup[args.pickup]
+    x0 = excitation[args.instrument][args.excitation]
 
     print("")
     sound_lib = DefaultDict(Sound)
@@ -140,10 +141,10 @@ def make_sound_lib(samplerate, args):
         sound_name = f'{notes[(i + shift) % 12]}{cur_octave}'
 
         frequency = C4 * np.pow(2., (i + shift) * 1./12)
-        opt = instruments[args.instrument][1](base_frequency=frequency, halflife=damping_halflife, pick_pos=excitation[args.instrument][args.excitation])
-        instrument = instruments[args.instrument][0](opt)
+        oscillator = oscillators[args.instrument](L=1., N=10)
+        instrument = Instrument(oscillator, base_frequency=frequency, halflife=damping_halflife)
 
-        sound = convert_for_sounddevice(normalize(np.sum(instrument.sound(t, x_out), axis=1), scale=amplitude), mode='clip')
+        sound = convert_for_sounddevice(normalize(instrument.sound(t, x_out, x0), scale=amplitude), mode='clip')
         sound_lib[keybindings[i]] = Sound(name=sound_name, sound=sound, max_stack=args.max_stack)
     print("\r"+" "*80+f"\rComputing sounds done")
     print("Key bindings:")

@@ -4,6 +4,8 @@
 import abc
 from abc import ABC, abstractmethod
 
+__all__ = ['LinearDeformation']
+
 
 class LinearDeformation(ABC):
     def __init__(self, L, N):
@@ -59,3 +61,10 @@ class LinearDeformation(ABC):
         return 1. / self.eigenvalues * self.eigenmodes(x0).ravel()
 
 
+    """    def compute_coefficients(self, fun):
+        u = fun(self.x)  # Initial condition, evaluated at x
+        # This is integration of the piecewise-constant reconstructions of U0 and e_k
+        integration_weights = np.ones_like(u) * (self.options.L / (self.options.Nx - 1))
+        integration_weights[0] *= 0.25
+        integration_weights[-1] *= 0.25
+        return np.matmul(self.e_k.transpose(), u * integration_weights)"""

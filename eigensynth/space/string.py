@@ -4,12 +4,12 @@
 import numpy as np
 from numpy.typing import NDArray
 
-__all__ = ['laplace_1d_eigen']
+__all__ = ['String']
 
 from eigensynth.space.linear_deformation import LinearDeformation
 
 
-class Laplace1D(LinearDeformation):
+class String(LinearDeformation):
     """
     Eigenfunctions and eigenvalues of the 1D Laplace operator ( d_xx u)
     on the interval [0,L] with zero Dirichlet boundary conditions, i.e.,
@@ -48,8 +48,3 @@ class Laplace1D(LinearDeformation):
         assert x.ndim == 1
         arg = self.wavenumbers * np.pi / self.L
         return np.sqrt(self.L / 2.) * np.sin(np.outer(x, arg))
-
-
-def laplace_1d_eigen(x: NDArray | float, N: int, L: float = 1.):
-    op = Laplace1D(L, N)
-    return op.eigenmodes(x), op.eigenvalues

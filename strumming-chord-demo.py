@@ -1,23 +1,23 @@
 # SPDX-FileCopyrightText: None
 #
 # SPDX-License-Identifier: CC0-1.0
-from matplotlib.ticker import FuncFormatter
-
-from eigensynth.sounds import write_soundfile, play_sound, normalize
-from eigensynth.instruments.string import String, StringOptions
 
 import numpy as np
 from matplotlib import pyplot as plt
 
+from eigensynth.instrument import Instrument
+from eigensynth.plot import plot_sound_signal, plot_sound_spectrum
+from eigensynth.sounds import write_soundfile, play_sound, normalize
+from eigensynth.space import String
 from eigensynth.time import samples
 
 
 def minor_chord(base_frequency):
-    return base_frequency * np.pow(2., np.array([0., 3./12., 7./12.]))
+    return base_frequency * np.pow(2., np.array([0., 3. / 12., 7. / 12.]))
 
 
 def major_chord(base_frequency):
-    return base_frequency * np.pow(2., np.array([0., 4./12., 7./12.]))
+    return base_frequency * np.pow(2., np.array([0., 4. / 12., 7. / 12.]))
 
 
 if __name__ == '__main__':
@@ -28,8 +28,7 @@ if __name__ == '__main__':
 
     L = 1.  # meter, Length of the string
     base_freq = 440.  # Hz
-    opts = [StringOptions(base_frequency=f, L=L) for f in minor_chord(base_freq)]
-    strings = [String(o) for o in opts]
+    strings = [Instrument(String(L, N=10), base_frequency=f, halflife=duration / 10.) for f in minor_chord(base_freq)]
 
     t = samples(samplerate, duration)
 
@@ -39,41 +38,19 @@ if __name__ == '__main__':
 
     # emulate a single pickup of an electric guitar by using a single point for evaluation
     # this makes a crisp sound
-    #x_out = L * 0.7
+    # x_out = L * 0.7
 
     sounds = np.stack([
-        np.sum(s.sound(t-i*delay_fan, x_out), axis=1)
-        for i,s in enumerate(strings)])
+        s.sound(t - i * delay_fan, x_out, x0=L * 0.8)
+        for i, s in enumerate(strings)])
     sound = normalize(np.sum(sounds, axis=0))
 
     play_sound(sound, samplerate)
-    write_soundfile('string', sound, samplerate)
+    write_soundfile('chord', sound, samplerate)
 
     plot_samples = int(0.1 * samplerate)
-    fig, ax = plt.subplots(2,1)
-    #ax[0].plot(t[0:N], U[0:N, 50], label='U(t, x=0.5)')
-    ax[0].plot(t[0:plot_samples], sound[0:plot_samples], label='U(t, x=0.5)')
-    ax[0].set_xlabel(f'time / s')
-    ax[0].set_ylabel('x')
-
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    plot_sound_signal(ax1, t[0:plot_samples], sound[0:plot_samples], label='sound')
     plot_samples = int(1 * samplerate)
-    Uf = np.fft.rfft(sound[0:plot_samples], axis=0)[1:]  # Discard 0Hz (constant) component
-    f = np.fft.rfftfreq(plot_samples, d =1. / samplerate)[1:] # Discard 0Hz (constant) component
-    # Getting tick positions and labels right in an axis with log scale is too much hassle.
-    # Instead, this plot uses a linear x scale with log-scaled x-values
-    f_octave = np.log2(f / base_freq)  #  Convert frequencies to octaves above the base frequency
-    ax[1].plot(f_octave, np.pow(np.abs(Uf), 2.))
-    ax[1].set_xscale("linear")
-    ax[1].set_yscale("log", base=10)
-    # Major ticks on all integers in the data range
-    x_majorticks = np.arange(np.min(f_octave), np.max(f_octave), 1, dtype=int)
-    # Subdivide each major tick interval into 3 minor intervals
-    x_minorticks = (np.atleast_2d(x_majorticks).transpose() + np.array([1./3., 2./3.], ndmin=2)).flatten()
-    ax[1].set_xticks(x_majorticks)
-    ax[1].set_xticks(x_minorticks, labels=(), minor=True)
-    ax[1].yaxis.set_major_formatter(FuncFormatter(lambda val, pos: f"{int(10*np.log10(val))}"))
-    ax[1].grid(which='major', alpha=0.5)
-    ax[1].grid(which='minor', alpha=0.3, linestyle='--')
-    ax[1].set_xlabel(f'log2(f/{int(base_freq)} Hz)')
-    ax[1].set_ylabel('Power / dB')
+    plot_sound_spectrum(ax2, sound[0:plot_samples], samplerate, base_frequency=base_freq, label='sound')
     plt.show()

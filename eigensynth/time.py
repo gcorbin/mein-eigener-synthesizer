@@ -10,7 +10,8 @@ def oscillator_stiffness_from_frequency(freq):
 
 
 def oscillator_frequency(k):
-    assert k > 0
+    k = np.atleast_1d(k)
+    assert np.all(k > 0)
     return np.sqrt(k) / (2 * np.pi)
 
 

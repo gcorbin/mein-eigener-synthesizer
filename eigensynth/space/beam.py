@@ -5,12 +5,12 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.optimize import root_scalar
 
-__all__ = ['cantilevered_beam_eigen']
+__all__ = ['Beam']
 
 from eigensynth.space.linear_deformation import LinearDeformation
 
 
-class Beam1D(LinearDeformation):
+class Beam(LinearDeformation):
     """
     Modes of the cantilevered beam.
     Compute the eigenfunctions and eigenvalues of
@@ -53,11 +53,6 @@ class Beam1D(LinearDeformation):
         betaL = self._beta * self.L
         return ((np.cosh(arg) - np.cos(arg))
                 + (np.cos(betaL) + np.cosh(betaL)) / (np.sin(betaL) + np.sinh(betaL)) * (np.sin(arg) - np.sinh(arg)))
-
-
-def cantilevered_beam_eigen(x: NDArray | float, N: int, L: float = 1.):
-    beam = Beam1D(L, N)
-    return beam.eigenmodes(x), beam.eigenvalues
 
 
 def _roots_cosh_cos_plus_1(N):
