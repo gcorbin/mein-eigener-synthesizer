@@ -31,11 +31,17 @@ class CylindricalShell(LinearDeformation):
                  e_k is a 3d array of the modes with shape (Z.shape,  2 * Nz * Ntheta)
         """
 
-    def __init__(self, L: tuple[float, float], N: tuple[int, int], shell_constant: float):
+    def __init__(self, L: float|tuple[float, float], N: int|tuple[int, int], shell_constant: float):
+        if isinstance(L, float):
+            L = (L, 1.)
+        if isinstance(N, int):
+            N = (N, N)
         super().__init__(L, N)
         self._shell_constant = shell_constant
 
-    def grid(self, Nx: tuple[int, int]):
+    def grid(self, Nx: int|tuple[int, int]):
+        if isinstance(Nx, int):
+            Nx = (Nx, Nx)
         L_z, a = self.L
         nx, ntheta = Nx
         z = L_z * np.linspace(0., 1., nx)
@@ -84,8 +90,16 @@ class CylindricalShell(LinearDeformation):
         # Eigenvalues for even and odd functions are the same
         return np.tile(gamma_k, 2)
 
-    def eigenmodes(self, x: tuple[NDArray, NDArray]):
-        Z, Theta = x
+    def eigenmodes(self, x: float|NDArray|tuple[float, float]|tuple[NDArray, NDArray]):
+        if isinstance(x, tuple):
+            Z, Theta = x
+            # Convert tuple of floats to 1x1 meshgrid
+            if isinstance(Z, float):
+                Z, Theta = np.meshgrid(np.atleast_1d(Z), np.atleast_1d(Theta))
+        else:
+            # Treat single float or array as (array of) Z coordinates,
+            # assume Theta = 0
+            Z, Theta = np.meshgrid(np.atleast_1d(x), np.array([0.]))
         assert Z.ndim == 2 and Z.shape == Theta.shape
         L_z, a = self.L
         m = self._wavenumbers_even[:, 0]

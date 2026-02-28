@@ -12,9 +12,9 @@ import sounddevice as sd
 
 from eigensynth.sounds import normalize
 from eigensynth.instrument import Instrument
-from eigensynth.space import String, Beam
+from eigensynth.space import String, Beam, CylindricalShell
 from eigensynth.sounds import convert_for_sounddevice
-from eigensynth.time import samples, oscillator
+from eigensynth.time import samples
 
 
 @dataclass
@@ -79,9 +79,9 @@ keybindings = ('a', 'w', 's', 'e', 'd', 'f', 't', 'g', 'y', 'h', 'u', 'j', 'k', 
 notes = ('C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B')
 note_indices = {n: i for i,n in enumerate(notes)}
 
-oscillators = {'string': String,
-               'beam': Beam}
-
+oscillators = {'string': String(L=1., N=10),
+               'beam': Beam(L=1., N=10),
+               'pipe': CylindricalShell(L=(1., 1./(4.*np.pi)), N=(8,8), shell_constant=1e5),}
 
 sound_pickup = {
     'clean': np.array([0.7]),
@@ -90,7 +90,8 @@ sound_pickup = {
 
 excitation = {
     'string': {'soft': 0.5, 'medium': 0.85, 'hard': 0.95},
-    'beam': {'soft': 1., 'medium': 0.5, 'hard': 0.2}
+    'beam': {'soft': 1., 'medium': 0.5, 'hard': 0.2},
+    'pipe': {'soft': 0.5, 'medium': 0.85, 'hard': 0.95},
 }
 
 
@@ -141,7 +142,7 @@ def make_sound_lib(samplerate, args):
         sound_name = f'{notes[(i + shift) % 12]}{cur_octave}'
 
         frequency = C4 * np.pow(2., (i + shift) * 1./12)
-        oscillator = oscillators[args.instrument](L=1., N=10)
+        oscillator = oscillators[args.instrument]
         instrument = Instrument(oscillator, base_frequency=frequency, halflife=damping_halflife)
 
         sound = convert_for_sounddevice(normalize(instrument.sound(t, x_out, x0), scale=amplitude), mode='clip')
