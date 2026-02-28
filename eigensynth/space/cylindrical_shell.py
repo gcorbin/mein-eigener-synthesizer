@@ -34,8 +34,8 @@ def cylindrical_shell_eigen(x: tuple[NDArray, NDArray], N: tuple[int, int], L: t
     N_z, N_theta = N
     L_z, a = L
     # k = (m-1) * N_theta + (n-1)
-    m = np.repeat(np.arange(1, N_z + 1, 1, dtype=int), N_theta)  # slow index
-    n = np.tile(np.arange(1, N_theta + 1, 1, dtype=int), N_z)  # fast index
+    m = np.repeat(np.arange(1, N_z + 1, 1, dtype=int), N_theta+1)  # m = 1,...N_z, slow index
+    n = np.tile(np.arange(0, N_theta + 1, 1, dtype=int), N_z)  # n = 0,...,N_theta, fast index
 
     lam_k = -1. * (np.power(np.pi * m / L_z, 4) + 2. * np.power(np.pi / L_z / a * m * n, 2) + np.power(n / a, 4))
     kappa_k = np.power(m * np.pi / L_z, 2)
