@@ -3,19 +3,45 @@ SPDX-FileCopyrightText: None
 
 SPDX-License-Identifier: CC0-1.0
 -->
-
 # Mein eigener Synthesizer
 
-Makes sounds from oscillators.
+## Install 
 
-An oscillator is a differential equation of the form 
+Set up a virtual environment (optional) and install dependencies:
 
-d_tt u + d * d_t u + D(u) = 0
+```shell
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements
+```
 
-If u = u(t), D(u) = c^2 * u, this is an ordinary differential equation
+## Set-up and run 
 
-d_tt u + d * d_t u + c^2 u = 0
+List available sound devices:
+
+```shell
+python3 ./mein-eigener-synthesizer.py --list-devices
+```
+
+Run with preferred device (using `--device` option)
+
+```shell
+python3 ./mein-eigener-synthesizer.py --device 0 # put your preferred device here
+```
+
+Example with different sounds
+```shell
+python3 ./mein-eigener-synthesizer.py \
+  --base G \
+  --octave 3 \
+  --instrument beam \
+  --excitation hard \
+  --pickup clean \
+  --duration 2
+```
 
 
-If u = u(t, x), this is a partial differential equation with some differential operator D(u) in x.
-The operator D should allow diagonalization via eigenfunctions. 
+## What is this about?
+
+Exploring eigenfunctions and eigenvalues of differential operators by making 
+sounds from them.
