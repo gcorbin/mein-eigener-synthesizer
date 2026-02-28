@@ -138,7 +138,7 @@ def make_sound_lib(samplerate, args):
     sound_lib = DefaultDict(Sound)
     for i in range(0, num_sounds):
         print("\r"+" "*80+f"\rComputing sound {i+1} / {num_sounds}", end='', flush=True)
-        cur_octave = (args.octave * 12 + i + shift) // 12
+        cur_octave = (4 * 12 + i + shift) // 12
         sound_name = f'{notes[(i + shift) % 12]}{cur_octave}'
 
         frequency = C4 * np.pow(2., (i + shift) * 1./12)
