@@ -41,7 +41,6 @@ def visualize_initial_condition(instrument, args):
     Z, Phi = instrument.oscillator.grid([51,51])
     w0 = instrument.solution(0, (Z,Phi), forcing_point)[0,:,:]
 
-    print(np.amax(w0))
     R = a * np.ones_like(Z) +  0.1 / np.amax(w0) * w0
     X = R * np.cos(Phi)
     Y = R * np.sin(Phi)
@@ -51,6 +50,7 @@ def visualize_initial_condition(instrument, args):
     ax.plot_surface(X, Y, Z, vmin=Z.min() * 2, facecolors=cm.Blues(R/np.amax(R)), rcount=100, ccount=100)
     ax.set_xlabel('x')
     ax.set_ylabel('y')
+    ax.set_title(f'Initial condition for force at {forcing_point[0][0]},{forcing_point[1][0]}')
 
     plt.show()
 
@@ -59,13 +59,16 @@ def show_sound(instrument, args):
     samplerate = 44100  # Hz
     t = samples(samplerate, instrument.halflife*20)
     # Show eigenvalues gamma_mn as (m,n) matrix
-    #print(f"base mode: {np.argmin(instrument.frequencies)}, freq = {instrument.frequencies}")
+    base_mode = np.argmin(instrument.frequencies)
+    print(f"base mode: {base_mode}, freq = {instrument.frequencies[base_mode]}")
 
     M,N = instrument.oscillator.N
-    plt.matshow(instrument.frequencies[0:M * (N + 1)].reshape((M, N+1)))
-    plt.xlabel('n')
-    plt.ylabel('m')
-    plt.show()
+    fig, ax = plt.subplots(1,1)
+    img = ax.matshow(instrument.frequencies[0:M * (N + 1)].reshape((M, N+1)))
+    ax.set_xlabel('n')
+    ax.set_ylabel('m')
+    fig.colorbar(img, ax=ax)
+    ax.set_title('Frequencies by wavenumber')
 
     L, a = instrument.oscillator.L
     forcing_point = np.meshgrid(np.array([0.7 * L]), np.array([0.25 * np.pi]))
