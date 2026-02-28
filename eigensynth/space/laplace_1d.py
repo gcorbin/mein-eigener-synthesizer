@@ -6,8 +6,10 @@ from numpy.typing import NDArray
 
 __all__ = ['laplace_1d_eigen']
 
+from eigensynth.space.linear_deformation import LinearDeformation
 
-def laplace_1d_eigen(x: NDArray | float, N: int, L: float = 1.):
+
+class Laplace1D(LinearDeformation):
     """
     Eigenfunctions and eigenvalues of the 1D Laplace operator ( d_xx u)
     on the interval [0,L] with zero Dirichlet boundary conditions, i.e.,
@@ -28,8 +30,26 @@ def laplace_1d_eigen(x: NDArray | float, N: int, L: float = 1.):
     :param L: Length of the domain
     :return: (e_k, lambda_k). e_k is an array with shape (x.size, N), lambda_k is a vector of length N
     """
-    x = np.atleast_1d(x)
-    assert x.ndim == 1
-    k = np.linspace(1, N, N)
-    arg = k * np.pi / L
-    return np.sqrt(L / 2.) * np.sin(np.outer(x, arg)), -1. * arg ** 2
+
+    def grid(self, Nx: int):
+        return np.linspace(0., self.L, Nx)
+
+    @property
+    def wavenumbers(self):
+        return np.linspace(1, self.N, self.N)
+
+    @property
+    def eigenvalues(self):
+        arg = self.wavenumbers * np.pi / self.L
+        return -1. * arg ** 2
+
+    def eigenmodes(self, x):
+        x = np.atleast_1d(x)
+        assert x.ndim == 1
+        arg = self.wavenumbers * np.pi / self.L
+        return np.sqrt(self.L / 2.) * np.sin(np.outer(x, arg))
+
+
+def laplace_1d_eigen(x: NDArray | float, N: int, L: float = 1.):
+    op = Laplace1D(L, N)
+    return op.eigenmodes(x), op.eigenvalues

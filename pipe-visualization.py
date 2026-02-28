@@ -9,7 +9,7 @@ import numpy as np
 
 from eigensynth.plot import plot_sound_signal, plot_sound_spectrum
 from eigensynth.sounds import play_sound, normalize
-from eigensynth.space.cylindrical_shell import cylindrical_shell_eigen
+from eigensynth.space.cylindrical_shell import cylindrical_shell_eigen, CylindricalShell
 from eigensynth.instruments import Pipe, PipeOptions
 from eigensynth.time import samples, damped_oscillator_coefficients, damped_oscillator, oscillator_frequency
 
@@ -23,8 +23,8 @@ def main():
 
 def visualize_initial_condition():
     a = 1.
-    L = np.pi*a
-    shell_constant = 1e4
+    L = 4*np.pi*a
+    shell_constant = 1e2
 
     (m,n) = (12,12)
 
@@ -44,10 +44,10 @@ def visualize_initial_condition():
     print(f"ks = {ks}, kd = {kd}")
     print(f"base mode: {np.argmin(tuned_gamma)}, freq = {oscillator_frequency(np.min(tuned_gamma))}")
 
-    """plt.matshow(tuned_gamma[0:m*n].reshape((m,n)))
+    plt.matshow(tuned_gamma[0:m*(n+1)].reshape((m,n+1)))
     plt.xlabel('n')
     plt.ylabel('m')
-    plt.show()"""
+    plt.show()
 
     t = samples(samplerate, duration)
 
@@ -68,24 +68,23 @@ def visualize_initial_condition():
     plot_sound_spectrum(ax2, sound[0:plot_samples], samplerate, base_frequency=base_frequency, label='sound')
     plt.show()
 
-    """Nx = [100,100]
-        z = L * np.linspace(0., 1., Nx[0] + 1)
-        phi = 2. * np.pi * np.linspace(0., 1., Nx[1] + 1)
-        Z, Phi = np.meshgrid(z, phi)
-        e_k, gamma_k = cylindrical_shell_eigen((Z,Phi), (m,n), (L,a), shell_constant)
-        w0 = np.sum(c0.reshape(1,1,-1) * e_k, axis=2)
-        print(np.amax(w0))
-        R = a * np.ones_like(Z) +  0.1 / np.amax(w0) * w0
-        X = R * np.cos(Phi)
-        Y = R * np.sin(Phi)
+    shell = CylindricalShell([L, a], [m, n], shell_constant)
+    Z, Phi = shell.grid([101,101])
 
-        # Plot the surface
-        fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-        ax.plot_surface(X, Y, Z, vmin=Z.min() * 2, facecolors=cm.Blues(R/np.amax(R)), rcount=100, ccount=100)
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
+    e_k, gamma_k = cylindrical_shell_eigen((Z,Phi), (m,n), (L,a), shell_constant)
+    w0 = np.sum(c0.reshape(1,1,-1) * e_k, axis=2)
+    print(np.amax(w0))
+    R = a * np.ones_like(Z) +  0.1 / np.amax(w0) * w0
+    X = R * np.cos(Phi)
+    Y = R * np.sin(Phi)
 
-        plt.show()"""
+    # Plot the surface
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+    ax.plot_surface(X, Y, Z, vmin=Z.min() * 2, facecolors=cm.Blues(R/np.amax(R)), rcount=100, ccount=100)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+
+    plt.show()
 
 
 

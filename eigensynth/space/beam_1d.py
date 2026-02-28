@@ -7,8 +7,10 @@ from scipy.optimize import root_scalar
 
 __all__ = ['cantilevered_beam_eigen']
 
+from eigensynth.space.linear_deformation import LinearDeformation
 
-def cantilevered_beam_eigen(x: NDArray | float, N: int, L: float = 1.):
+
+class Beam1D(LinearDeformation):
     """
     Modes of the cantilevered beam.
     Compute the eigenfunctions and eigenvalues of
@@ -28,17 +30,34 @@ def cantilevered_beam_eigen(x: NDArray | float, N: int, L: float = 1.):
     :param L: Length of the domain
     :return: Modes and eigenvalues (e_k, lambda_k). e_k is an array with shape (x.size, N), lambda_k is a vector of length N
     """
-    x = np.atleast_1d(x)
-    assert x.ndim == 1
-    beta_k = _roots_cosh_cos_plus_1(N) / L
-    lam_k = -1. * np.power(beta_k, 4.)
+    def __init__(self, L, N):
+        super().__init__(L,N)
+        self._beta = _roots_cosh_cos_plus_1(self.N) / self.L
 
-    arg = np.outer(x, beta_k)
-    betaL = beta_k * L
-    e_k = (np.cosh(arg) - np.cos(arg)) + (np.cos(betaL) + np.cosh(betaL)) / (np.sin(betaL) + np.sinh(betaL)) * (
-                np.sin(arg) - np.sinh(arg))
+    def grid(self, Nx: int):
+        return np.linspace(0., self.L, Nx)
 
-    return e_k, lam_k
+    @property
+    def wavenumbers(self):
+        return np.linspace(1, self.N, self.N)
+
+    @property
+    def eigenvalues(self):
+        return -1. * np.power(self._beta, 4.)
+
+    def eigenmodes(self, x):
+        x = np.atleast_1d(x)
+        assert x.ndim == 1
+
+        arg = np.outer(x, self._beta)
+        betaL = self._beta * self.L
+        return ((np.cosh(arg) - np.cos(arg))
+                + (np.cos(betaL) + np.cosh(betaL)) / (np.sin(betaL) + np.sinh(betaL)) * (np.sin(arg) - np.sinh(arg)))
+
+
+def cantilevered_beam_eigen(x: NDArray | float, N: int, L: float = 1.):
+    beam = Beam1D(L, N)
+    return beam.eigenmodes(x), beam.eigenvalues
 
 
 def _roots_cosh_cos_plus_1(N):
