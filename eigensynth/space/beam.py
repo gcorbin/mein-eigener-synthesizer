@@ -39,7 +39,12 @@ class Beam(LinearDeformation):
 
     @property
     def wavenumbers(self):
-        return np.linspace(1, self.N, self.N)
+        return np.linspace(1, self.N, self.N, dtype=int)
+
+    def indices(self, wavenumbers):
+        n = np.atleast_1d(wavenumbers)
+        assert np.all(0 < n <= self.N)
+        return n - 1
 
     @property
     def eigenvalues(self):

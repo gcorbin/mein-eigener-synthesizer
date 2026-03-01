@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: CC0-1.0
 from argparse import ArgumentParser
 import matplotlib.pyplot as plt
-import sounddevice
 from matplotlib import cm
 import numpy as np
 
@@ -11,7 +10,7 @@ from eigensynth.plot import plot_sound_signal, plot_sound_spectrum
 from eigensynth.sounds import play_sound, normalize
 from eigensynth.space.cylindrical_shell import CylindricalShell
 from eigensynth.instrument import Instrument
-from eigensynth.time import samples, damped_oscillator_coefficients, damped_oscillator, oscillator_frequency
+from eigensynth.time import samples
 
 
 def main():
@@ -29,9 +28,44 @@ def main():
     shell = CylindricalShell((L, a), (m, n), shell_constant)
     instrument = Instrument(shell, base_frequency=base_frequency, halflife=halflife)
 
+    visualize_modes(instrument, args)
     visualize_initial_condition(instrument, args)
     show_sound(instrument, args)
     return 0
+
+
+def visualize_modes(instrument, args):
+    # Show eigenvalues gamma_mn as (m,n) matrix
+    base_mode = instrument.oscillator.wavenumbers[np.argmin(instrument.frequencies)]
+
+    M,N = instrument.oscillator.N
+    fig, ax = plt.subplots(1,1)
+    img = ax.matshow(instrument.frequencies[0:M * (N + 1)].reshape((M, N+1)), extent=(-0.5,N+0.5,M+0.5,0.5))
+    ax.set_xlabel('n')
+    ax.set_ylabel('m')
+    fig.colorbar(img, ax=ax)
+    ax.set_title(f'Frequencies by wavenumber, base mode (m,n,p) = {base_mode}')
+
+    Z, Phi = instrument.oscillator.grid([31,31])
+
+    e_k = instrument.oscillator.eigenmodes((Z, Phi))
+    mnp = instrument.oscillator.wavenumbers
+    (L, a) = instrument.oscillator.L
+
+    # Plot the surface
+    fig, ax = plt.subplots(3,4, subplot_kw={"projection": "3d"})
+    for m in range(1,4):
+        for n in range(0,4):
+            k = instrument.oscillator.indices(np.array([m, n, 0]))[0]
+
+            scaling = 0.2
+            R = a * np.ones_like(Z) + scaling / np.amax(e_k[:,:,k]) * e_k[:,:,k]
+            X = R * np.cos(Phi)
+            Y = R * np.sin(Phi)
+            ax[m-1,n].plot_surface(X, Y, Z, vmin=Z.min() * 2, facecolors=cm.Blues(R / np.amax(R)))
+            ax[m-1,n].set_title(f'Mode ({m}, {n}), {instrument.frequencies[k]:.1f} Hz')
+
+    plt.show()
 
 
 def visualize_initial_condition(instrument, args):
@@ -58,17 +92,6 @@ def visualize_initial_condition(instrument, args):
 def show_sound(instrument, args):
     samplerate = 44100  # Hz
     t = samples(samplerate, instrument.halflife*20)
-    # Show eigenvalues gamma_mn as (m,n) matrix
-    base_mode = np.argmin(instrument.frequencies)
-    print(f"base mode: {base_mode}, freq = {instrument.frequencies[base_mode]}")
-
-    M,N = instrument.oscillator.N
-    fig, ax = plt.subplots(1,1)
-    img = ax.matshow(instrument.frequencies[0:M * (N + 1)].reshape((M, N+1)))
-    ax.set_xlabel('n')
-    ax.set_ylabel('m')
-    fig.colorbar(img, ax=ax)
-    ax.set_title('Frequencies by wavenumber')
 
     L, a = instrument.oscillator.L
     forcing_point = np.meshgrid(np.array([0.7 * L]), np.array([0.25 * np.pi]))

@@ -29,6 +29,10 @@ class LinearDeformation(ABC):
     def wavenumbers(self):
         pass
 
+    @abc.abstractmethod
+    def indices(self, wavenumbers):
+        pass
+
     @property
     @abc.abstractmethod
     def eigenvalues(self):

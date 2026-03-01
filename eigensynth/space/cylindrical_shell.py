@@ -75,9 +75,31 @@ class CylindricalShell(LinearDeformation):
         :return: Array W of wavenumbers of shape ( 2 * N_z * (N_theta +1), 3). W[k,:] is (m,n,parity)
         """
         mn = self._wavenumbers_even
-        mne = np.concatenate([mn, np.zeros(mn.shape[0], dtype=int)], axis=1)
-        mno = np.concatenate([mn, np.ones(mn.shape[0], dtype=int)], axis=1)
+        mne = np.concatenate([mn, np.zeros((mn.shape[0],1), dtype=int)], axis=1)
+        mno = np.concatenate([mn, np.ones((mn.shape[0],1), dtype=int)], axis=1)
         return np.concatenate([mne, mno], axis=0)
+
+    def indices(self, wavenumbers):
+        """
+        Indices I[m,n,p] holds the index of wavenumber (m,n,p) in the eigenvalues/eigenmodes
+        arrays
+
+        self.indices(self.wavenumbers) is equivalent to np.arange(2 * M * (N+1))
+
+        :wavenumbers: Array (K, 3), where wavenumbers[i, :] is a wavenumber tuple (m,n,p)
+        :return: 1D Array shape (K,) holding the indices corresponding to the wavenumbers
+        """
+        M,N = self.N
+
+        wavenumbers = np.atleast_2d(wavenumbers)
+        m = wavenumbers[:, 0]
+        n = wavenumbers[:, 1]
+        p = wavenumbers[:, 2]
+        assert np.all(0 <  m <= M)
+        assert np.all(0 <= n <= N)
+        assert np.all(0 <= p <= 1)
+
+        return (M*(N+1))*p + (m - 1) * (N+1) + n
 
     @property
     def eigenvalues(self):
