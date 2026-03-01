@@ -11,31 +11,27 @@ from eigensynth.space.linear_deformation import LinearDeformation
 
 
 class Beam(LinearDeformation):
-    """
-    Modes of the cantilevered beam.
-    Compute the eigenfunctions and eigenvalues of
-
-        -d_xxxx u = 0
-
-    on the interval [0,L],
-    with BC u(0) = d_x u(0) = d_xx u(0) = d_xxx u(0) = 0,
-    i.e. e_k such that -d_xxxx e_k = lambda_k * e_k, k = 1,...N.
-
-    See https://en.wikipedia.org/wiki/Euler%E2%80%93Bernoulli_beam_theory#Dynamic_beam_equation
-    for details.
-    The modes e_k are orthogonal and normalized.
-
-    :param x: Positions at which the modes are evaluated.
-    :param N: Number of modes
-    :param L: Length of the domain
-    :return: Modes and eigenvalues (e_k, lambda_k). e_k is an array with shape (x.size, N), lambda_k is a vector of length N
-    """
     def __init__(self, L, N):
+        """
+        Modes of the (homogeneous) cantilevered beam, i.e. eigenvalues and eigenfunctions of
+
+            -d_xxxx u = 0
+
+        on the interval [0,L],
+        with clamping boundary condition at x=0: u(0) = d_x u(0) = d_xx u(0) = d_xxx u(0) = 0.
+
+        See https://en.wikipedia.org/wiki/Euler%E2%80%93Bernoulli_beam_theory#Dynamic_beam_equation
+        for details.
+        """
         super().__init__(L,N)
         self._beta = _roots_cosh_cos_plus_1(self.N) / self.L
 
     def grid(self, Nx: int):
         return np.linspace(0., self.L, Nx)
+
+    @property
+    def K(self):
+        return self.N
 
     @property
     def wavenumbers(self):
@@ -60,11 +56,11 @@ class Beam(LinearDeformation):
                 + (np.cos(betaL) + np.cosh(betaL)) / (np.sin(betaL) + np.sinh(betaL)) * (np.sin(arg) - np.sinh(arg)))
 
 
-def _roots_cosh_cos_plus_1(N):
+def _roots_cosh_cos_plus_1(N: int):
     """
     Find the first N roots of cosh(x_k) * cos(x_k) + 1 = 0
 
-    :param N:
+    :param N: Number of roots
     :return: Array containing the roots
     """
 

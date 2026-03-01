@@ -13,25 +13,45 @@ from eigensynth.space.linear_deformation import LinearDeformation
 
 
 class CylindricalShell(LinearDeformation):
-    """
-        Compute eigenfunctions and eigenvalues of the cylindrical thin shell
+    def __init__(self, L: float|tuple[float, float], N: int|tuple[int, int], shell_constant: float):
+        """
+        Modes and eigenvalues of the cylindrical thin shell with length L and radius a.
+        According to thin shell theory in cylindrical coordinates,
+        radial displacement w(x), and auxiliary stress F(x) are given by
+
+            (E*h)/s * a^2 * Nabla^4 w + 1/a d_zz F = 0
+            Nabla^4 F - (E*h)/a d_zz w = 0
+
+        for x = (z,theta) in Omega = (0,L)x(0,2pi).
+
+        The shell constant s = (12 (1-mu^2)) / (h/a)^2 depends on the Poisson-ratio of the material and the shell's
+        thickness-to-radius ratio (h/a). Since shell theory is only valid for thin walls (h/a) << 1,
+        this is typically a large value.
+        The constant E is the Young's modulus (stiffness) of the material.
+
+        Eigenfunctions e_mnp for the displacement w for wavenumber (m,n,p) in [1,M]x[0,N]x[0,1] are given by
+
+                                                                       | cos(n * theta), p == 0
+            e_mnp(z, theta) = sqrt(2 / pi / L) * sin(m * pi * z / L) * |
+                                                                       | sin(n * theta), p == 1
+
+        Eigenvalues gamma_mn0 = gamma_mn1 =: gamma_mn are
+
+            gamma_mn = -1 * (E*h)/s * a^2 * ( lambda_mn + s/a^4 * kappa_mn^2 / lambda_mn )
+
+        with
+
+            lambda_mn = (m * pi / L)^4 + 2 * ( m * pi * n / L / a)^2 + ( n / a )^4
+            kappa_mn = - ( m * pi / L )^2
 
         See https://doi.org/10.1121/2.0000945 for details.
 
-        :param x: cylindrical coordinates Z, Theta as output of np.meshgrid
-        :param N: Nz, Ntheta Number of axial and circumferential modes
-        :param L: Length and radius of the cylinder
-        :param shell_constant: A function of the Poisson ratio mu of the material and the shell thickness relative to the radius (h/a)
-                               shell_constant = 12  (1-mu^2)/(h/a)^2
-                               Since shell theory is only valid for thin walls (h/a) << 1, this is typically a large value
-        :return: Modes and eigenvalues (e_k, gamma_k). For each wavenumber (m,n) there are two modes, thus there are 2 * Nz * Ntheta in total.
-                 gamma_k is a vector length 2 * Nz * Ntheta.
-                 The first Nz * Ntheta entries k = (m-1) * Ntheta + (n-1) belong to the even modes sqrt(2/pi/L) * sin(m*pi*z/L) * cos(n*theta) and
-                 the next Nz * Ntheta entries k = Nz*Ntheta + (m-1) * Ntheta + (n-1) belong to the odd modes sqrt(2/pi/L) * sin(m*pi*z/L) * sin(n*theta).
-                 e_k is a 3d array of the modes with shape (Z.shape,  2 * Nz * Ntheta)
+        :param L: tuple (L, a): Length and radius of the cylinder.
+                  A scalar value is interpreted as (L, 1.)
+        :param N: tuple (M,N): Maximum axial and circumferential wavenumber. There are 2*M*(N+1) eigenvalues.
+                  A scalar value is interpredet as (N,N)
+        :param shell_constant: shell_constant = 12(1-mu^2)/(h/a)^2.
         """
-
-    def __init__(self, L: float|tuple[float, float], N: int|tuple[int, int], shell_constant: float):
         if isinstance(L, float):
             L = (L, 1.)
         if isinstance(N, int):
@@ -50,29 +70,40 @@ class CylindricalShell(LinearDeformation):
         return Z, Phi
 
     @property
+    def K(self):
+        M, N = self.N
+        return 2 * M * (N+1)
+
+    @property
     def _wavenumbers_even(self):
         """
-        Wavenumbers W[k,:] = (m,n) for the even modes only. They are ordered
-            k = (m-1) * N_theta + n, m = 1,...N_z, n = 0,...,N_theta
+        Wavenumbers W[k,:] = (m,n) for the even modes only.
 
-        :return: Array of wavenumbers of shape ( N_z*(N_theta + 1), 2 )
+        They are ordered
+
+            k = (m-1) * N + n, m = 1,...M, n = 0,...,N
+
+        :return: Array of wavenumbers of shape ( M*(N + 1), 2 )
         """
-        N_z = self.N[0]
-        N_theta = self.N[1]
-        # k = (m-1) * N_theta + (n-1)
-        m = np.repeat(np.arange(1, N_z + 1, 1, dtype=int), N_theta + 1)  # m = 1,...N_z, slow index
-        n = np.tile(np.arange(0, N_theta + 1, 1, dtype=int), N_z)  # n = 0,...,N_theta, fast index
+        M, N = self.N
+        m = np.repeat(np.arange(1, M + 1, 1, dtype=int), N + 1)  # m = 1,...M, slow index
+        n = np.tile(np.arange(0, N + 1, 1, dtype=int), M)  # n = 0,...,N, fast index
         return np.stack([m, n], axis=-1)
 
     @property
     def wavenumbers(self):
         """
         Wavenumbers W[k,:] = (m,n,parity) for even and odd modes.
+
         First come the even modes with
-            k = (m-1) * N_theta + n, m = 1,...N_z, n = 0,...,N_theta
+
+            k = (m-1) * N + n, m = 1,...M, n = 0,...,N
+
         then the odd modes with
-            k = N_z * Ntheta + (m-1) * N_theta + n, m = 1,...N_z, n = 0,...,N_theta
-        :return: Array W of wavenumbers of shape ( 2 * N_z * (N_theta +1), 3). W[k,:] is (m,n,parity)
+
+            k = (M * N) + (m-1) * N + n, m = 1,...M, n = 0,...,N
+
+        :return: Array W of wavenumbers of shape (K, 3). W[k,:] is (m,n,parity)
         """
         mn = self._wavenumbers_even
         mne = np.concatenate([mn, np.zeros((mn.shape[0],1), dtype=int)], axis=1)
@@ -82,12 +113,12 @@ class CylindricalShell(LinearDeformation):
     def indices(self, wavenumbers):
         """
         Indices I[m,n,p] holds the index of wavenumber (m,n,p) in the eigenvalues/eigenmodes
-        arrays
+        arrays.
 
-        self.indices(self.wavenumbers) is equivalent to np.arange(2 * M * (N+1))
+        self.indices(self.wavenumbers) is equivalent to np.arange(K)
 
-        :wavenumbers: Array (K, 3), where wavenumbers[i, :] is a wavenumber tuple (m,n,p)
-        :return: 1D Array shape (K,) holding the indices corresponding to the wavenumbers
+        :param wavenumbers: Array (K, 3), where wavenumbers[i, :] is a wavenumber tuple (m,n,p)
+        :return: 1D Array size K, holding the indices corresponding to the wavenumbers.
         """
         M,N = self.N
 
@@ -113,6 +144,16 @@ class CylindricalShell(LinearDeformation):
         return np.tile(gamma_k, 2)
 
     def eigenmodes(self, x: float|NDArray|tuple[float, float]|tuple[NDArray, NDArray]):
+        """
+        :param x: cylindrical coordinates Z, Theta, either
+                  - (Z,Theta) as output of np.meshgrid
+                  - (z,theta) as single coordinate pair
+                  - Z as array of z-values, assume theta = 0
+                  - z as single z-value, assume theta = 0
+
+        :return: Modes evaluated at x. 3D array. The first two axes have the same shape as Z.
+                 The last axis is the flat index of wavenumbers, length K.
+        """
         if isinstance(x, tuple):
             Z, Theta = x
             # Convert tuple of floats to 1x1 meshgrid

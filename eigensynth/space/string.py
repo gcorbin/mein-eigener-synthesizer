@@ -10,29 +10,31 @@ from eigensynth.space.linear_deformation import LinearDeformation
 
 
 class String(LinearDeformation):
-    """
-    Eigenfunctions and eigenvalues of the 1D Laplace operator ( d_xx u)
-    on the interval [0,L] with zero Dirichlet boundary conditions, i.e.,
+    def __init__(self, L, N):
+        """
+        Eigenfunctions and eigenvalues of the 1D Laplace operator ( d_xx u)
+        on the interval [0,L] with zero Dirichlet boundary conditions, i.e.,
 
-    e_k(x) such that d_xx e_k = lambda_k * e_k, k = 1, ..., N
+        e_k(x) such that d_xx e_k = lambda_k * e_k, k = 1, ..., N
 
-    evaluated at x.
+        evaluated at x.
 
-    These are given by
+        These are given by
 
-    e_k(x) = sqrt(L/2) * sin( k * pi / L * x),
-    lambda_k = -(k * pi / L)**2
+        e_k(x) = sqrt(L/2) * sin( k * pi / L * x),
+        lambda_k = -(k * pi / L)**2
 
-    where the factor sqrt(L/2) is chosen to normalize the eigenfunctions.
+        where the factor sqrt(L/2) is chosen to normalize the eigenfunctions.
+        """
+        super().__init__(L, N)
 
-    :param x: Positions at which e_k are evaluated.
-    :param N: Number of eigenvectors and eigenvalues
-    :param L: Length of the domain
-    :return: (e_k, lambda_k). e_k is an array with shape (x.size, N), lambda_k is a vector of length N
-    """
 
     def grid(self, Nx: int):
         return np.linspace(0., self.L, Nx)
+
+    @property
+    def K(self):
+        return self.N
 
     @property
     def wavenumbers(self):
